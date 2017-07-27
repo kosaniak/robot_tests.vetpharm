@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -
 from robotpageobjects import Page, robot_alias
 from robot.utils import asserts
 from time import sleep
