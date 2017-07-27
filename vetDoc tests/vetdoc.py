@@ -87,12 +87,13 @@ class VetDocHomePage(Page):
     @robot_alias("select__french__language")
     def select_french(self):
         self.click_button("fr button")
-        self.body_should_contain_text("Rechercher", "French was not selected")
+        body_txt= self.get_text("css=body").encode("utf-8")
+        asserts.assert_true("Espèce" in body_txt, "French was not selected")
         return self
 
     def select_english(self):
         self.click_button("en button")
-        self.body_should_contain_text("Search", "English was not selected")
+        self.body_should_contain_text("Species", "English was not selected")
         return self
 
     @robot_alias("clear__address__field")
