@@ -23,6 +23,7 @@ class VetDocHomePage(Page):
     selectors = {
         "address input box": "id=id_all",
         "name input box": "id=id_name",
+        "language menu": "xpath=(//span[@class='navbar-toggler-icon'])",
         "fr button": "id=fr-lang-button",
         "en button": "id=en-lang-button",
         "remove location": "xpath=(//div[@class='remove-loc']/i[@class='fa fa-times'])",
@@ -81,11 +82,13 @@ class VetDocHomePage(Page):
     @robot_alias("switch__between__languages")
     def change_language(self):
         self.select_french()
+        self.click_element("language menu")
         self.select_english()
         return self
 
     @robot_alias("select__french__language")
     def select_french(self):
+        self.click_element("language menu")
         self.click_button("fr button")
         body_txt= self.get_text("css=body").encode("utf-8")
         asserts.assert_true("Espèce" in body_txt, "French was not selected")
@@ -117,7 +120,7 @@ class VetDocHomePage(Page):
     def search__by__address(self):
         address= self.address_value()
         self.type_in_search_box(address,"address input box")
-        index= self.test_autocomplete("xpath=/html/body/div[2]", address)
+        index= self.test_autocomplete("xpath=(//div[@class='pac-container pac-logo'])", address)
         city_name= self.get_text("xpath=/html/body/div[2]/div["+str (index)+"]/span[2]")
         self.click_element("xpath=/html/body/div[2]/div["+str (index)+"]")
         body_txt = self.get_text("css=body").encode("utf-8").lower()

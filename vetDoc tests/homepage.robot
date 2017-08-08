@@ -10,10 +10,6 @@ Suite Teardown  Close Browser
 
 Open 'Find a vet' home page
     Open VetDoc
-    Maximize Browser Window
-
-Test whether language can be switched
-    Switch Between Languages
 
 Test whether Address autocomplete works
     Search By Address
@@ -33,3 +29,6 @@ Test whether clinic autocomplete works
     Search By Name  ${clinic name}
     Back To Previous Page
     Clear Name Field
+
+Test whether language can be switched
+    Switch Between Languages
