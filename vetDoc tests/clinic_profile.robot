@@ -10,7 +10,6 @@ Suite Teardown  Close Browser
 
 Open 'Clinic profile' page
     Open VetDoc
-    Maximize Browser Window
     Switch Between Clinics And Veterinarians
     ${clinic name}=  clinic_value
     Search By Name  ${clinic name}

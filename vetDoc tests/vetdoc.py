@@ -46,7 +46,10 @@ class VetDocHomePage(Page):
         "filter tags": "xpath=(//ul[@class='specialities']/a)",
         "list of clinics": "xpath=(//ul[@class='clinics']/li)",
         "list of veterinarians": "xpath=(//ul[@class='veterinarians']/li)",
-        "phone": "xpath=//div[@class='clinic_tel']/a"
+        "phone": "xpath=//div[@class='clinic_tel']/a",
+        "distance filter": "xpath=//div[@class='block-within']//div[@class='Select-control']//span[@class='Select-arrow-zone']",
+        "search radius": "id=react-select-8--list",
+        "last page": "xpath=//div/div[4]/div[3]/nav/ul/li[10]"
     }
     
 
@@ -132,7 +135,7 @@ class VetDocHomePage(Page):
     @robot_alias("search__by__name")
     def search__by__name(self, term):
         self.type_in_search_box(term, "name input box")
-        index= self.test_autocomplete("xpath=//*[@id='id_list_name']", term)
+        index= self.test_autocomplete("xpath=//*[@id='id_list_name']", term[:4])
         name= self.get_text("xpath=//*[@id='id_list_name']/li["+str (index)+"]/a/span")
         self.click_element("xpath=//*[@id='id_list_name']/li["+str (index)+"]")
         body_txt = self.get_text("css=body").encode("utf-8").lower()
@@ -275,6 +278,37 @@ class VetDocHomePage(Page):
         app_link= self.find_element("xpath=//div[@class='clinic_tel']/a[@href='tel:+33 (0)"+ str(phone_number) +"']")
         self.click_element(app_link)
         return self
+
+    @robot_alias("check__distance__filter")
+    def change_search_radius(self):
+        self.type_in_search_box('Lyon',"address input box")
+        self.click_element("xpath=/html/body/div[2]/div[1]")
+        self.click_element("distance filter")
+        self.select_radius()
+        return self
+
+    def select_radius(self):
+        index=0
+        for i in range(0, len(self.get_text("search radius").splitlines())):
+            search_radius= int(self.get_text("id=react-select-8--option-"+str (index)+"")[:-2])
+            self.click_element("id=react-select-8--option-"+str (index)+"")
+            self.check_distance(search_radius)
+            self.click_element("distance filter")
+            index += 1
+        return search_radius
+
+    def check_distance(self, search_radius):
+        self.click_element("last page")
+        html_list = self.find_element("xpath=(//div[@class='row']/ul)")
+        items = html_list.find_elements_by_tag_name("li")
+        for vet_info in items:
+            location= self.get_text(vet_info).splitlines()[-1]
+            if 'km' in location:
+                radius= location[:-21]
+                asserts.assert_true(float(radius) < search_radius,
+                    "The address does not include distance from the search location")
+        return self
+
 
     @robot_alias("body_should_contain")
     def body_should_contain_text(self, str, error_message, ignore_case=True):

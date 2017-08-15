@@ -10,13 +10,16 @@ Suite Teardown  Close Browser
 
 Open Search results page
     Open VetDoc
-    Maximize Browser Window
 
 Whether language can be switched
     Switch Between Languages
 
 Whether map is displayed
     Show Map  location map
+
+Whether distance filter works
+    Check Distance Filter
+    Clear Address Field
 
 Whether Address autocomplete works
     Search By Address

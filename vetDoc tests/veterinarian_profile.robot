@@ -10,7 +10,6 @@ Suite Teardown  Close Browser
 
 Open 'Veterinary profile' page
     Open VetDoc
-    Maximize Browser Window
     ${veterinarian name}=  veterinarian_value
     Search By Name  ${veterinarian name}
 
