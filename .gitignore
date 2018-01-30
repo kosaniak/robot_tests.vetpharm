@@ -10,3 +10,4 @@ output.xml
 *~
 nosetests.xml
 po_log.txt
+sensitive_settings.py
