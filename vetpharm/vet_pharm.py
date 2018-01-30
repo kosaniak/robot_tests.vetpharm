@@ -1,10 +1,13 @@
 from robotpageobjects import Page, robot_alias
+from robot.api import logger
+from robot.libraries.BuiltIn import BuiltIn
 from robot.utils import asserts
 from time import sleep
 from random import randint, choice
 from string import ascii_lowercase
 from itertools import islice
 import uuid
+import sensitive_settings
 from datetime import datetime
 
 
@@ -17,8 +20,6 @@ class VetoPharmHomePage(Page):
     # something other than the default "VetDoc Home Page"
     # at the end of keywords.
     name = "VetoPharm"
-    email = 'hostmaster@vetpharm.fr'
-    password = '6V9Dwa3ryiCBeEViSNdqEmpBG4EeSEeJ'
     TLDS = ('com net org mil edu de biz de ch at ru de tv com'
     'st br fr de nl dk ar jp eu it es com us ca pl')
     # inheritable dictionary mapping human-readable names
@@ -127,14 +128,14 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Login__into__user__account")
     def successful_login(self):
-        self.login_into_acc(self.email, self.password)
+        self.login_into_acc(sensitive_settings.email, sensitive_settings.password)
         self.body_should_contain_text('Welcome back', 
             'Login failed for user')
         return self
 
     @robot_alias("Try__to__login__with__incorrect__credentials")
     def unsuccessful_login(self):
-        self.login_into_acc(self.email_generator(), self.gen_password())
+        self.login_into_acc(sensitive_settings.email_generator(), sensitive_settings.gen_password())
         self.body_should_contain_text('Please enter a correct username and password. Note that both fields may be case-sensitive', 
             'No alert message about incorrect credentials')
         return self
@@ -162,21 +163,21 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Try__to__register__already__taken__email")
     def taken_email_registration(self):
-        self.register(self.email, self.password)
+        self.register_account(sensitive_settings.email, sensitive_settings.password)
         self.body_should_contain_text('A user with that email address already exists', 
             'Successful registration for already taken email')
         return self
 
     @robot_alias("Try__to__register__the __invalid__email")
     def invalid_email_registration(self):
-        self.register(self.email_generator()[:-5])
+        self.register_account(self.email_generator()[:-5])
         self.body_should_contain_text('Enter a valid email address',
             'Successful registration for invalid email address')
         return self
 
     @robot_alias("Use__too__short__password")
     def invalid_password_registration(self):
-        self.register(self.email_generator(), self.gen_password()[:3])
+        self.register_account(self.email_generator(), self.gen_password()[:3])
         self.body_should_contain_text('Ensure this value has at least 6 characters (it has',
             'No alert message about insecure password')
         return self
@@ -194,17 +195,12 @@ class VetoPharmHomePage(Page):
             'No alert message about password confirmation fail')
         return self
 
-    def register_account(self):
-        password=self.register()     
-        self.body_should_contain_text('Thanks for registering!',
-            'Registration Failed')
-        return password 
-
-    def register(self, email=None, password=None):
-        if password==None: 
-            password= self.gen_password()
+    def register_account(self, email=None):
         if email==None:
             email= self.email_generator()
+            password= self.gen_password()
+        elif email=='testnotification@vetpharm.fr':
+            password='kA6@S5n$u$'
         self.click_element("login or register")
         self.click_element("register")
         sleep(2)
@@ -212,22 +208,56 @@ class VetoPharmHomePage(Page):
         self.type_in_box(password, "registration password")
         self.type_in_box(password, "confirm password")
         self.click_button("registration submit")
+        sleep(3)
+        if self._page_contains('To activate your account, please click the link sent to your mailbox'):
+            self.activate_new_account(email, password)
+            sleep(1)
+            self.body_should_contain_text('Your account was confirmed successfully',
+                'The account was not activated')
         return password
+
+    def activate_new_account(self, email, password):
+        self._current_browser().get('https://mail29.lwspanel.com/webmail/')
+        if self._is_element_present("id=rcmloginuser"):
+            self.type_in_box(email, "id=rcmloginuser")
+            self.type_in_box(password, "id=rcmloginpwd")
+            self.click_element("id=rcmloginsubmit")
+        self.wait_until_element_is_enabled("id=mailview-top", 25)
+        body = self.find_element("id=mailview-top")
+        all_letters = body.find_elements_by_class_name('message')
+        self.click_element(all_letters[0])
+        sleep(3)
+        if self._page_contains("Thank you for registering on VetPharm!"):
+            self.select_frame("id=messagecontframe")
+            self.focus("received email letters")
+            self.click_element("received email letters")
+        else:
+            self.activate_new_account(email, password)
+        handles = self._current_browser().get_window_handles()
+        self.select_window(handles[0])
+        self.close_window()
+        self.select_window()
+        return self
 
     @robot_alias("Delete__profile")
     def delete_account(self, password):
         self.click_element("user account")
         self.click_element("my profile")
+        self.click_element_at_coordinates("edit profile", 875, 867)
         self.click_element("edit profile")
+        self.click_element_at_coordinates("delete profile", 1295, 867)
         self.click_element("delete profile")
+        sleep(1)
         self.type_in_box(password, "account pasword")
         self.click_element("delete account")
         self.body_should_contain_text("Your profile has now been deleted. Thanks for using the site", "Profile was not deleted")
         return self    
 
     def type_in_box(self, txt, search_box):
-        for i in range(len(txt)):
-            self.input_text(search_box, txt[0:i+1])
+        logger.info("Typing text '%s' into text field '%s'." % (txt, search_box))
+        for letter in txt:
+            self.find_element(search_box).send_keys(letter)
+            sleep(0.25)
         return self
         
     def body_should_contain_text(self, str, error_message, ignore_case=True):
@@ -290,12 +320,13 @@ class VetoPharmHomePage(Page):
     def add_to_wishlist(self):
         product = self.select_product()
         self.mouse_over(product)
-        wishlist= product.find_elements_by_tag_name('i')
+        wishlist= product.find_element_by_tag_name('i')
         default_wishlist= product.find_elements_by_tag_name('label')
         pr_name = self.product_name(product)
-        self.click_element(wishlist[0])
+        self.click_element(wishlist)
         sleep(2)
         self.click_element(default_wishlist[0])
+        self.find_element("list of wishlists")
         self.click_element("list of wishlists")
         self.click_element("wishlist view")
         self.body_should_contain_text(pr_name, 'Selected product was not added to wishlist')
@@ -303,7 +334,8 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Update__quantity__in__whishlist")
     def update_quantity(self):
-        self.type_in_box('3', "product quantity" )
+        self.find_element("product quantity")
+        self.input_text("product quantity", '3')
         self.click_element("update quantity")
         box_value= self.find_element("product quantity").get_attribute('value')
         asserts.assert_true(box_value =='3', 
@@ -323,7 +355,7 @@ class VetoPharmHomePage(Page):
     def create_wishlist(self):
         self.click_element("list of wishlists")
         self.click_element("create new wishlist")
-        self.type_in_box('For my cat', "wishlist name")
+        self.input_text("wishlist name", 'For my cat')
         self.click_element("save wishlist")
         self.body_should_contain_text('Your wishlist has been created', 'Wishlist was not created')
         self.click_element("list of wishlists")
@@ -351,6 +383,7 @@ class VetoPharmHomePage(Page):
         self.mouse_over(product)
         add_to_basket=product.find_elements_by_tag_name("button")[-1]
         self.click_element(add_to_basket)
+        sleep(2)
         self._current_browser().back()
         self.click_element("add to basket")
         self.body_should_contain_text(pr_name, 'Selected product was not added to basket')
@@ -364,6 +397,7 @@ class VetoPharmHomePage(Page):
 
     def select_product(self):
         self.click_element("all products")
+        self.wait_until_element_is_visible("search filters")
         self.click_element("search filters")
         self.click_element("availability filter")
         self.click_element("availiable product")
@@ -509,4 +543,104 @@ class VetoPharmHomePage(Page):
         for question in questions[1:5]:
             answer = question.find_elements_by_tag_name("label")
             self.click_element(choice(answer))
+        return self
+
+    def choose_checkout_user(self, checkout_role, email=None, password=None):
+        self.click_element("proceed to checkout button")
+        self.click_element(checkout_role)
+        if checkout_role == "checkout with account":
+            self.type_in_box(sensitive_settings.email,"user email for checkout")
+            self.type_in_box(sensitive_settings.password,"account pasword")
+        else:
+            self.type_in_box(email,"user email for checkout")
+        self.click_element("continue checkout button")
+        return self
+
+    def add_checkout_address(self, names=None, city=None):
+        self.click_element("new checkout address")
+        self.type_in_box(city,"address autocomplete for checkout")
+        if city == 'berlin':
+            self.click_element("berlin")
+        else:
+            self.click_element("paris")
+        if names == True:
+            self.type_in_box(self.gen_name(6),"id=id_first_name")
+            self.type_in_box(self.gen_name(10),"id=id_last_name")
+        self.click_element("continue checkout")
+        return self
+
+    @robot_alias("Proceed_to_checkout_as_guest")
+    def checkout_as_guest(self):
+        guest_email= self.email_generator()
+        self.choose_checkout_user("checkout guest", email=guest_email)
+        self.add_checkout_address(names=True, city='berlin')
+        self.add_checkout_address(city='berlin')
+        self.click_element("home delivery")
+        self.click_element("select paybox")
+        self.type_in_box('1111222233334444', "paybox cardnumber")
+        self.type_in_box('123', "paybox ccv number")
+        self.click_element("continue paybox payment")
+        preview_text= ['Shipping address', 'Billing address', 'Shipping method', 'Payment', 'Products']
+        for item in preview_text:
+            self.body_should_contain_text(item, '%s is not present in the preview of payment' % item)
+        self.click_element("place order")
+        self.click_element("view order status")
+        self.body_should_contain_text('Pending', 'The payment status is other than %s' % ('Pending'))
+        self._current_browser().back()
+        self.click_element("continue shopping")
+        return self
+
+    @robot_alias("Proceed_to_checkout_and_create_account")
+    def checkout_and_create_account(self):
+        new_email = 'testnotification@vetpharm.fr'
+        self.choose_checkout_user("checkout with new a account", new_email)
+        self.current_frame_contains('Create your account and then you will be redirected back to the checkout process')
+        self.register_account(new_email)
+        self.click_element("my basket")
+        self.click_element("proceed to checkout button")
+        self.add_checkout_address(names=True, city='paris')
+        self.add_checkout_address(city='paris')
+        self.click_element("pick up at the pharmacy")
+        self.click_element("select bank transfer")
+        preview_text = ['Shipping address', 'Billing address', 'Shipping method', 'Payment', 'Products']
+        for item in preview_text:
+            self.body_should_contain_text(item, '%s is not present in the preview of payment' % item)
+        self.click_element("place order")
+        self.click_element("continue shopping")
+        self.delete_account('kA6@S5n$u$')
+        return self
+
+    @robot_alias("Proceed_to_checkout_as_logged_in_user")
+    def checkout_as_logged_in_user(self):
+        self.choose_checkout_user("checkout with account")
+        self.click_element("checkout company")
+        self.click_element("proceed company checkout")
+        self.click_element("checkout address")
+        self.click_element("checkout address")
+        self.click_element("business parcel delivery")
+        self.click_element_at_coordinates("select paypal", 1284, 913)
+        self.click_element("select paypal")
+        self.wait_until_element_is_visible('paypal login frame')
+        self.select_frame('paypal login frame')
+        sleep(1)
+        username = self.get_webelements("paypal email login")[0]
+        self.input_text(username, 'pharmacyshoptest-buyer@gmail.com')
+        password = self.get_webelements("paypal password login")[0]
+        self.input_text(password, 'X4ttLgRtAj61')
+        sleep(2)
+        self.wait_until_element_is_enabled("paypal login btn")
+        self.click_element("paypal login btn")
+        self.unselect_frame()
+        sleep(10)
+        if not self._is_visible("paypal continue btn"):
+            self.reload_page()
+        self.wait_until_element_is_not_visible(("xpath=(//*[@id='spinner'])"), 25)
+        self.wait_until_element_is_enabled("paypal continue btn", 25)
+        self.click_element("paypal continue btn")
+        self.wait_until_element_is_visible("place order")
+        self.click_element("place order")
+        self.body_should_contain_text('Your order has been placed and a confirmation email has been sent - your order number is',
+                                    "Expected order confirmation is not present")
+        self.click_element("continue shopping")
+        self.log_out()
         return self
