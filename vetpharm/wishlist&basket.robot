@@ -24,7 +24,7 @@ Test if prices view can be selected
     Select Prices View
 
 Register a new account
-    ${password}=  register_account
+    ${password}=  register_account  testnotification@vetpharm.fr
     Set Suite Variable  ${password}
 
 Add and delete product from whishlist
@@ -42,3 +42,15 @@ Add and remove product from basket
 
 Delete account
     Delete profile  ${password}
+
+Proceed to checkout as logged in user
+    Add product to basket
+    Proceed to checkout as logged in user
+
+Proceed to checkout as guest
+    Add product to basket
+    Proceed to checkout as guest
+
+Proceed to checkout and create account
+    Add product to basket
+    Proceed to checkout and create account
