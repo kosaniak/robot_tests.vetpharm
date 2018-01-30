@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -
 from robotpageobjects import Page, robot_alias
+from robot.api import logger
 from robot.utils import asserts
 from time import sleep
 import random
@@ -51,12 +52,13 @@ class VetDocHomePage(Page):
         "search radius": "id=react-select-8--list",
         "last page": "xpath=//div/div[4]/div[3]/nav/ul/li[10]"
     }
-    
+
 
     def type_in_search_box(self, txt, search_box):
-        for i in range(len(txt)):
-            self.input_text(search_box, txt[0:i+1])
-            sleep(1)
+        logger.info("Typing text '%s' into text field '%s'." % (txt, search_box))
+        for letter in txt:
+            self.find_element(search_box).send_keys(letter)
+            sleep(0.25)
 
         # We always return something from a page object, 
         # even if it's the same page object instance we are
