@@ -462,21 +462,40 @@ class VetoPharmHomePage(Page):
         self.body_should_contain_text(pr_name, 'Selected product was not added to basket')
         return self
 
-    @robot_alias("Remove__product__from__basket")
-    def delete_product(self):
-        self.click_element("delete from basket")
-        self.body_should_contain_text('Your basket is empty.', 'Selected product was not deleted from basket')
+    @robot_alias("Add__product__to__basket__from__preview")
+    def add_to_basket_from_preview(self, quantity=None):
+        pr_name = self.product_preview_page()
+        if quantity != None:
+            quantity_box = self.find_elements("xpath=(//input[@id='id_quantity'])")
+            self.input_text(quantity_box[0], quantity)
+        self.click_element("xpath=(//*[@id='add_to_basket_form_main']/button)")
+        sleep(1)
+        self.click_element("add to basket from preview")
+        self._current_browser().back()
+        self.click_element("add to basket")
+        self.body_should_contain_text(pr_name, 'Selected product was not added to basket')
         return self
 
-    def select_product(self):
+    def product_preview_page(self, search_filters=None):
+        product = self.select_product(search_filters)
+        pr_name = self.product_name(product)
+        self.mouse_over(product)
+        link = product.find_element_by_class_name('product_link')
+        self.wait_until_element_is_enabled(link, 25)
+        self.click_element(link)
+        sleep(2)
+        return pr_name
+
+    def select_product(self, search_filters=None):
         self.click_element("all products")
-        self.wait_until_element_is_visible("search filters")
-        self.click_element("search filters")
-        self.click_element("availability filter")
-        self.click_element("availiable product")
-        self.click_element("search filters")
-        self.click_element(("prescription filter"))
-        self.click_element("no prescription")
+        if search_filters != False:
+            self.wait_until_element_is_visible("search filters")
+            self.click_element("search filters")
+            self.click_element("availability filter")
+            self.click_element("availiable product")
+            self.click_element("search filters")
+            self.click_element(("prescription filter"))
+            self.click_element("no prescription")
         products_list= self.find_element("list of products")
         products= products_list.find_elements_by_tag_name("article")
         product= choice(products)
