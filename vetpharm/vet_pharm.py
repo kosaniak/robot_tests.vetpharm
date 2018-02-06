@@ -775,6 +775,19 @@ class VetoPharmHomePage(Page):
         self.click_element("continue shopping")
         return self
 
+    @robot_alias("Checkout_as_guest_with_payment_during_pickup")
+    def checkout_as_guest_pickup_payment(self):
+        guest_email= self.email_generator()
+        self.choose_checkout_user("checkout guest", email=guest_email)
+        self.add_checkout_address(names=True, city='les gets')
+        self.add_checkout_address(city='les gets')
+        self.click_element("flex delivery service")
+        self.click_element("during pickup payment")
+        self.test_checkout_preview()
+        self.click_element("place order")
+        self.click_element("continue shopping")
+        return self
+
     @robot_alias("Proceed_to_checkout_and_create_account")
     def checkout_and_create_account(self):
         new_email = 'testnotification@vetpharm.fr'
@@ -826,4 +839,40 @@ class VetoPharmHomePage(Page):
                                     "Expected order confirmation is not present")
         self.click_element("continue shopping")
         self.log_out()
+        return self
+
+    @robot_alias("Proceed_to_checkout_exluding_vat")
+    def checkout_exluding_vat(self):
+        guest_email= self.email_generator()
+        self.choose_checkout_user("checkout guest", email=guest_email)
+        self.add_checkout_address(names=True, city='geneva')
+        self.add_checkout_address(city='geneva')
+        self.click_element("pick up at the pharmacy")
+        self.click_element("bank cheque")
+        sleep(3)
+        self.body_should_contain_text('YOUR ORDER IS EXEMPT FROM FRENCH VAT (VAT = 0%).', "Total price does not exclude VAT")
+        self.find_element("xpath=(//div[@class='order_content'])")
+        all_prices = self.get_webelements("xpath=(//p[@class='price_color change_curr'])")
+        total_purchase = 0
+        for item in all_prices:
+            price = item.get_attribute('data-value')
+            print price
+            total_purchase += float(price)
+            print total_purchase
+        self.find_element("total product price excl vat")
+        price_exl_vat = self.get_text("total product price excl vat")
+        price_exl_vat = float(price_exl_vat[1:])
+        asserts.assert_equal(total_purchase, price_exl_vat, "Total price does not exclude VAT")
+        self.find_element("total product price incl vat")
+        price_inc_vat = self.get_text("total product price incl vat")
+        price_inc_vat = float(price_inc_vat[1:])
+        asserts.assert_not_equal(price_exl_vat, price_inc_vat, "Total price does not exclude VAT")
+        self.click_element("place order")
+        self.click_element("continue shopping")
+        return self
+
+    def test_checkout_preview(self):
+        preview_text = ['Shipping address', 'Billing address', 'Shipping method', 'Payment', 'Products']
+        for item in preview_text:
+            self.body_should_contain_text(item, '%s is not present in the preview of payment' % item)
         return self
