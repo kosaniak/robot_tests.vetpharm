@@ -506,6 +506,92 @@ class VetoPharmHomePage(Page):
         product_name= self.get_text(pr_name)
         return product_name
 
+    @robot_alias("Remove__product__from__basket")
+    def delete_product(self):
+        self.click_element("delete from basket")
+        self.body_should_contain_text('Your basket is empty.', 'Selected product was not deleted from basket')
+        return self
+
+    @robot_alias("Write_a_review_and_evaluate_product")
+    def write_product_review(self):
+        pr_name = self.product_preview_page(False)
+        while self._is_element_present("write a review button") != True:
+            pr_name = self.product_preview_page(False)
+        reviews = self.find_element("all reviews before")
+        reviews_before = self.get_text(reviews)
+        self.click_element("write a review button")
+        self.product_rating()
+        self.input_text('id=id_name_to_display', 'testnotification@vetpharm.fr')
+        review_input = self.find_element("xpath=(//textarea[@id='id_body'])")
+        self.input_text(review_input, 'I have used this drug')
+        self.click_element("submit a review button")
+        sleep(5)
+        reviews_after = self.get_text("all reviews after")
+        body_txt = self.get_text("css=body").encode("utf-8").lower()
+        asserts.assert_not_equal(reviews_before, reviews_after, "Review has been not submitted")
+        asserts.assert_false('Write a review' in body_txt, "Review has been not submitted")
+        self.page_should_contain('Thank you for reviewing this product', 'Review has been not submitted')
+        self.page_should_contain_element('id=edit_review', 'It is not possible to edit a review')
+        return self
+
+    @robot_alias("Edit_a_review")
+    def edit_product_review(self):
+        self.focus('id=edit_review')
+        self.click_element('id=edit_review')
+        star = self.find_element("xpath=(//*[@id='edit_review_form']/div[1]/div/input)")
+        prev_rate = star.get_attribute('value')
+        sleep(3)
+        updated_rate = self.product_rating(True)
+        new_rate = updated_rate.get_attribute('value')
+        if prev_rate == new_rate:
+            updated_rate = self.product_rating()
+            new_rate = updated_rate.get_attribute('value')
+        asserts.assert_not_equal(prev_rate, new_rate, "Rating has been not changed")
+        review_input = self.find_elements("xpath=(//textarea[@id='id_body'])")
+        self.input_text(review_input[1], 'Great!')
+        self.click_element("xpath=(//button[contains(text(),'Save your review')])")
+        sleep(2)
+        self.verify_successful_editing()
+        return self
+
+    @robot_alias("Delete_a_review")
+    def delete_review(self):
+        self.click_element('user account')
+        self.click_element('dashboard')
+        self.click_element('dashboard content')
+        self.click_element('dashboard reviews')
+        self.input_text('id=id_name', 'john')
+        self.click_element("filter reviews")
+        sleep(3)
+        self.click_element("xpath=(//button[@class='btn btn-default dropdown-toggle'])")
+        self.click_element("xpath=(//a[contains(text(),'Delete')])")
+        sleep(1)
+        self.click_element("xpath=(//button[@class='btn btn-danger'])")
+        sleep(1)
+        self.back_to_website()
+        return self
+
+    def verify_successful_editing(self):
+        self.click_element("xpath=(//*[@id='product-reviews']/div/h2)")
+        self.find_element('id=product-reviews')
+        all_reviews = self.get_text('id=product-reviews')
+        asserts.assert_true('Great!' in all_reviews, "The review has not been edited")
+        return self
+
+    def product_rating(self, edit=None):
+        if edit == True:
+            star_box = self.find_element("rating stars box editing")
+        else:
+            star_box = self.find_element("rating stars box")
+        stars = star_box.find_elements_by_tag_name('i')
+        print stars
+        prod_star = choice(stars)
+        print prod_star
+        self.mouse_over(prod_star)
+        sleep(3)
+        self.wait_until_element_is_visible(prod_star)
+        self.click_element(prod_star)
+        return prod_star
 
     @robot_alias("Add__an__animal")
     def add_animal(self):
