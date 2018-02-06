@@ -43,6 +43,22 @@ Add and remove product from basket
 Delete account
     Delete profile  ${password}
 
+Test if login works for correct credentials
+    Login into user account
+    Return To Site
+
+Write a review to a product
+    Write a review and evaluate product
+
+Edit a review to a product
+    Edit a review
+
+Delete a review to a product
+    Delete a review
+
+Logout from account
+    Logout from account
+
 Proceed to checkout as logged in user
     Add product to basket
     Proceed to checkout as logged in user
@@ -51,6 +67,15 @@ Proceed to checkout as guest
     Add product to basket
     Proceed to checkout as guest
 
+Proceed to checkout as guest with payment during pickup
+    Add product to basket from preview
+    Checkout as guest with payment during pickup
+
 Proceed to checkout and create account
     Add product to basket
     Proceed to checkout and create account
+
+Proceed to checkout with excluding VAT payment
+    Add product to basket from preview
+    Add product to basket from preview  2
+    Proceed to checkout exluding vat
