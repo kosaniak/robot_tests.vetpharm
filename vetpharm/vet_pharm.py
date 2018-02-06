@@ -279,7 +279,7 @@ class VetoPharmHomePage(Page):
         sleep(3)
         if self._page_contains('To activate your account, please click the link sent to your mailbox'):
             self.activate_new_account(email, password)
-            sleep(1)
+            sleep(5)
             self.body_should_contain_text('Your account was confirmed successfully',
                 'The account was not activated')
         return password
@@ -293,6 +293,11 @@ class VetoPharmHomePage(Page):
         self.wait_until_element_is_enabled("id=mailview-top", 25)
         body = self.find_element("id=mailview-top")
         all_letters = body.find_elements_by_class_name('message')
+        if all_letters == []:
+            self.reload_page()
+            self.wait_until_element_is_enabled("id=mailview-top", 25)
+            body = self.find_element("id=mailview-top")
+            all_letters = body.find_elements_by_class_name('message')
         self.click_element(all_letters[0])
         sleep(3)
         if self._page_contains("Thank you for registering on VetPharm!"):
@@ -445,7 +450,7 @@ class VetoPharmHomePage(Page):
         return self
 
     @robot_alias("Add__product__to__basket")
-    def add_to_basket(self):
+    def add_to_basket_from_listing(self):
         product = self.select_product()
         pr_name = self.product_name(product)
         self.mouse_over(product)
@@ -629,8 +634,17 @@ class VetoPharmHomePage(Page):
         self.type_in_box(city,"address autocomplete for checkout")
         if city == 'berlin':
             self.click_element("berlin")
+        elif city == 'geneva':
+            self.click_element("geneva")
+            self.type_in_box('Place Dorciere',"id=id_line1")
+            self.type_in_box('1201',"id=id_postcode")
+        elif city == 'les gets':
+            self.click_element("les gets")
+            self.type_in_box('Rue du Ctre',"id=id_line1")
         else:
             self.click_element("paris")
+            self.type_in_box('Avenue Anatole',"id=id_line1")
+            self.type_in_box('75007',"id=id_postcode")
         if names == True:
             self.type_in_box(self.gen_name(6),"id=id_first_name")
             self.type_in_box(self.gen_name(10),"id=id_last_name")
@@ -638,7 +652,7 @@ class VetoPharmHomePage(Page):
         return self
 
     @robot_alias("Proceed_to_checkout_as_guest")
-    def checkout_as_guest(self):
+    def checkout_as_guest_paybox(self):
         guest_email= self.email_generator()
         self.choose_checkout_user("checkout guest", email=guest_email)
         self.add_checkout_address(names=True, city='berlin')
@@ -648,9 +662,7 @@ class VetoPharmHomePage(Page):
         self.type_in_box('1111222233334444', "paybox cardnumber")
         self.type_in_box('123', "paybox ccv number")
         self.click_element("continue paybox payment")
-        preview_text= ['Shipping address', 'Billing address', 'Shipping method', 'Payment', 'Products']
-        for item in preview_text:
-            self.body_should_contain_text(item, '%s is not present in the preview of payment' % item)
+        self.test_checkout_preview()
         self.click_element("place order")
         self.click_element("view order status")
         self.body_should_contain_text('Pending', 'The payment status is other than %s' % ('Pending'))
@@ -670,9 +682,7 @@ class VetoPharmHomePage(Page):
         self.add_checkout_address(city='paris')
         self.click_element("pick up at the pharmacy")
         self.click_element("select bank transfer")
-        preview_text = ['Shipping address', 'Billing address', 'Shipping method', 'Payment', 'Products']
-        for item in preview_text:
-            self.body_should_contain_text(item, '%s is not present in the preview of payment' % item)
+        self.test_checkout_preview()
         self.click_element("place order")
         self.click_element("continue shopping")
         self.delete_account('kA6@S5n$u$')
