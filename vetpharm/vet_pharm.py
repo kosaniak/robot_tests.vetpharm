@@ -301,27 +301,29 @@ class VetoPharmHomePage(Page):
             self.type_in_box(email, "id=rcmloginuser")
             self.type_in_box(password, "id=rcmloginpwd")
             self.click_element("id=rcmloginsubmit")
-        self.wait_until_element_is_enabled("id=mailview-top", 25)
-        body = self.find_element("id=mailview-top")
-        all_letters = body.find_elements_by_class_name('message')
-        if all_letters == []:
+        all_letters = self.find_activation_letter()
+        while all_letters == []:
             self.reload_page()
-            self.wait_until_element_is_enabled("id=mailview-top", 25)
-            body = self.find_element("id=mailview-top")
-            all_letters = body.find_elements_by_class_name('message')
+            all_letters = self.find_activation_letter()
         self.click_element(all_letters[0])
         sleep(3)
-        if self._page_contains("Thank you for registering on VetPharm!"):
-            self.select_frame("id=messagecontframe")
-            self.focus("received email letters")
-            self.click_element("received email letters")
-        else:
-            self.activate_new_account(email, password)
+        while self._page_contains("Thank you for registering on VetPharm!") is not True:
+            self.reload_page()
+            all_letters = self.find_activation_letter()
+        self.select_frame("id=messagecontframe")
+        self.focus("received email letters")
+        self.click_element("received email letters")
         handles = self._current_browser().get_window_handles()
         self.select_window(handles[0])
         self.close_window()
         self.select_window()
         return self
+
+    def find_activation_letter(self):
+        self.wait_until_element_is_enabled("id=mailview-top", 25)
+        body = self.find_element("id=mailview-top")
+        all_letters = body.find_elements_by_xpath("//td[@class='subject']")
+        return all_letters
 
     @robot_alias("Delete__profile")
     def delete_account(self, password):
