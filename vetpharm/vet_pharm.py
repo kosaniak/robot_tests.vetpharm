@@ -887,3 +887,89 @@ class VetoPharmHomePage(Page):
         for item in preview_text:
             self.body_should_contain_text(item, '%s is not present in the preview of payment' % item)
         return self
+
+    @robot_alias("Verify_unreferenced_product_label")
+    def unreferenced_label(self):
+        locator = ("xpath=(//div[@class='availability-label no_price'])")
+        self.search_filter_labels("availability filter", 'unreferenced product', locator)
+        return self
+
+    @robot_alias("Verify_unreferenced_product_label_for_the_manufacture_of_medicated_feeds")
+    def unreferenced_label_medicated_feeds(self):
+        locator = ("xpath=(//div[@class='availability-label medicated_feeds'])")
+        self.search_filter_labels("availability filter", 'unreferenced product (medicated feeds)', locator)
+        return self
+
+    @robot_alias("Verify_manufactoring_suspended_label")
+    def manufacturing_suspended_label(self):
+        locator = ("xpath=(//div[@class='availability-label manufactoring_suspended'])")
+        self.search_filter_labels("availability filter", 'manufacturing suspended', locator)
+        return self
+
+    @robot_alias("Verify_manufactoring_stopped_label")
+    def manufacturing_stopped_label(self):
+        locator = ("xpath=(//div[@class='availability-label manufactoring_stopped'])")
+        self.search_filter_labels("availability filter", 'manufacturing stopped', locator)
+        return self
+
+    @robot_alias("Verify_marketing_authorisation_suspended_label")
+    def marketing_auth_suspended_label(self):
+        locator = ("xpath=(//div[@class='availability-label marketing_auth_suspended'])")
+        self.search_filter_labels("availability filter", 'marketing auth suspended', locator)
+        return self
+
+    @robot_alias("Verify_unavailable_out_of_stock_label")
+    def unavailable_out_of_stock_label(self):
+        locator = ("xpath=(//div[@class='availability-label unavailable_stock'])")
+        self.search_filter_labels("availability filter", 'out of stock filter', locator)
+        return self
+
+    @robot_alias("Verify_prescription_required_label")
+    def prescription_required_only_vets(self):
+        locator = ("xpath=(//div[@class='availability-label prescription_only_vets'])")
+        self.search_filter_labels("availability filter", 'prescription required', locator)
+        return self
+
+    @robot_alias("Verify_veterinary_drugs_label")
+    def veterinary_drugs_label(self):
+        locator = ("xpath=(//span[@class='is_drug availability-label'])")
+        self.search_filter_labels("category filter", 'veterinary drugs', locator)
+        return self
+
+    @robot_alias("Verify_issuance_on_prescription_label")
+    def issuance_on_prescription_label(self):
+        locator = ("xpath=(//span[@class='sur-ordonnance availability-label'])")
+        self.search_filter_labels("prescription filter", 'issuance on prescription', locator)
+        return self
+
+    @robot_alias("Verify_livestock_health_program_filter")
+    def livestock_health_program_label(self):
+        locator = ("xpath=(//span[@class='bilan-sanitaire LHP availability-label'])")
+        self.search_filter_labels("livestock health program filter", 'LHP beef production', locator)
+        return self
+
+    def search_filter_labels(self, search_filter, subfilter_name, label_locator):
+        self.click_element("all products")
+        self.search_labels_in_pages(search_filter, subfilter_name, label_locator)
+        if self._is_visible("xpath=(//li[@class='next'])") != None:
+            second_page = self.find_elements("xpath=(//li[@class='next'])")
+            self.search_labels_in_pages(search_filter, subfilter_name, label_locator, second_page[0])
+        if self._is_visible("xpath=(//li[@class='new_page'])"):
+            last_page = self.find_elements("xpath=(//li[@class='new_page'])")
+            if len(last_page) == 2:
+                self.search_labels_in_pages(search_filter, subfilter_name, label_locator, last_page[1])
+        return self
+
+    def search_labels_in_pages(self, search_filter, subfilter_name, label_locator, page=None):
+        if page == None:
+            self.wait_until_element_is_visible("search filters")
+            self.click_element("search filters")
+            self.click_element(search_filter)
+            self.click_element(subfilter_name)
+            sleep(1)
+        else:
+            self.click_element(page)
+        search_results = self.find_elements("xpath=(//article[@class='product_pod'])")
+        labels = self.find_elements(label_locator)
+        asserts.assert_equal(len(labels), len(search_results), "Label %s is not found in some elements" % subfilter_name)
+        return self
