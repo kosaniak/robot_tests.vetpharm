@@ -147,7 +147,6 @@ class VetoPharmHomePage(Page):
         "view order status": "xpath=(//a[@class='btn btn-primary'][contains(text(), 'View order status')])",
         "checkout with new a account": 'id=id_options_1',
         "my basket": "xpath=(//li[@class='my-basket'])",
-        # "paris": "xpath=(//div[@class='pac-item']/span[contains(text(), 'Place Louis-Armand, Paris, France')])",
         "paris": "xpath=(//div[@class='pac-item']/span[contains(text(), 'France')])",
         "pick up at the pharmacy": "xpath=(//*[@id='default']/div[1]/div/div[3]/div[1]/div[1]/div[2]/div/div/div[3]/form/button)",
         "select bank transfer": "xpath=(//*[@id='default']/div[1]/div/div[3]/div[1]/div[1]/div[2]/div[2]/form/button)",
@@ -172,7 +171,19 @@ class VetoPharmHomePage(Page):
         "rating stars box": "xpath=(//*[@id='add_review_form']/fieldset/div[1]/div/div[1])",
         "total product price excl vat": "xpath=(//*[@id='basket_totals']/div[1]/ul/li[1]/span)",
         "total product price incl vat": "xpath=(//*[@id='basket_totals']/div[1]/ul/li[3]/span)",
-        "add to basket from preview": "xpath=(//*[@id='add-to-basket-modal']/div/div/div[4]/a[1])"
+        "add to basket from preview": "xpath=(//*[@id='add-to-basket-modal']/div/div/div[4]/a[1])",
+        "unreferenced product": "xpath=(//span[@class='item-name'][contains(text(),'Unreferenced product')])",
+        "unreferenced product (medicated feeds)": "xpath=(//span[@class='item-name'][contains(text(),'Unreferenced product (For the manufacture of medicated feeds)')])",
+        "manufacturing suspended": "xpath=(//span[@class='item-name'][contains(text(),'Manufacturing suspended')])",
+        "manufacturing stopped": "xpath=(//span[@class='item-name'][contains(text(),'Manufacturing stopped')])",
+        "marketing auth suspended": "xpath=(//span[@class='item-name'][contains(text(),'Marketing authorisation suspended')])",
+        "prescription required": "xpath=(//span[@class='item-name'][contains(text(),'Prescription required. Dispensing is prohibited to public')])",
+        "category filter": "xpath=(//button[@class='filter-button']/span[contains(text(),'Category')])",
+        "veterinary drugs": "xpath=(//span[@class='item-name'][contains(text(),'Veterinary drugs')])",
+        "issuance on prescription": "xpath=(//span[@class='item-name'][contains(text(),'Issuance on prescription')])",
+        "livestock health program filter": "xpath=(//button[@class='filter-button']/span[contains(text(),'Livestock Health Program (LHP)')])",
+        "LHP beef production": "xpath=(//span[@class='item-name'][contains(text(),'Beef production')])",
+        "out of stock filter": "xpath=(//span[@class='item-name'][contains(text(),'Unavailable (out of stock)')])"
     }
 
     def gen_name(self, length):
