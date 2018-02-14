@@ -409,13 +409,50 @@ class VetoPharmHomePage(Page):
             'Price view does not include tax information')
         return self
 
-    @robot_alias("Add__product__to__wishlist")
-    def add_to_wishlist(self):
+    @robot_alias("Add__product__to__wishlist__from__listing")
+    def add_to_wishlist_from_listing(self):
         product = self.select_product()
         self.mouse_over(product)
         wishlist= product.find_element_by_tag_name('i')
         default_wishlist= product.find_elements_by_tag_name('label')
         pr_name = self.product_name(product)
+        self.click_element(wishlist)
+        sleep(2)
+        self.click_element(default_wishlist[0])
+        self.find_element("list of wishlists")
+        self.click_element("list of wishlists")
+        self.click_element("wishlist view")
+        self.body_should_contain_text(pr_name, 'Selected product was not added to wishlist')
+        return self
+
+    @robot_alias("Add__product__to__wishlist__from__product__page")
+    def add_to_wishlist_from_product_page(self):
+        pr_name = self.product_preview_page()
+        print pr_name
+        self.click_element("xpath=(//div[@class='wishlist_butt'])")
+        self.click_element("xpath=(//label[@class='link_site_style'])")
+        sleep(1)
+        self.find_element("list of wishlists")
+        self.click_element("list of wishlists")
+        self.click_element("wishlist view")
+        self.body_should_contain_text(pr_name, 'Selected product was not added to wishlist')
+        return self
+
+    @robot_alias("Add__product__to__wishlist__from__recently__viewed")
+    def add_to_wishlist_from_recently_viewed(self):
+        i = 0
+        while i < 5:
+            self.product_preview_page()
+            i += 1
+            print i
+        recently_viewed = self.find_elements("xpath=(//article[@class='product_pod'])")
+        choose_prod = choice(recently_viewed)
+        self.focus(choose_prod)
+        self.mouse_over(choose_prod)
+        wishlist= choose_prod.find_element_by_tag_name('i')
+        default_wishlist= choose_prod.find_elements_by_tag_name('label')
+        pr_name = self.product_name(choose_prod)
+        sleep(2)
         self.click_element(wishlist)
         sleep(2)
         self.click_element(default_wishlist[0])
