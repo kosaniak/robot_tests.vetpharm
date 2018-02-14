@@ -798,6 +798,43 @@ class VetoPharmHomePage(Page):
             self.click_element(choice(answer))
         return self
 
+    @robot_alias("Redirect_to_purchase_from_bovi-pharm")
+    def redirect_from_bovi_pharm(self):
+        self._current_browser().get('https://bovi-pharm.devel.vetopharm.quintagroup.com/en-gb/')
+        self.wait_until_element_is_visible("search filters")
+        self.click_element("search filters")
+        self.click_element("drug list filter")
+        self.click_element("drug list not applicable")
+        sleep(2)
+        products_list= self.find_element("list of products")
+        products= products_list.find_elements_by_tag_name("article")
+        prod = choice(products)
+        pr_name = self.product_name(prod)
+        print pr_name
+        self.mouse_over(prod)
+        link = prod.find_element_by_class_name('product_link')
+        self.click_element(link)
+        sleep(1)
+        name = self.find_element("xpath=(//div[@class='descktop-product-header']/h1)")
+        pr_name = self.get_text(name)
+        redirect = self.find_element("xpath=(//i[@class='fa fa-external-link'])")
+        print redirect
+        self.mouse_over(redirect)
+        self.wait_until_element_is_visible(redirect, 25)
+        self.click_element(redirect)
+        print 777
+        sleep(7)
+        self.close_prev_window_tab()
+        self.wait_until_element_is_enabled("xpath=(//div[@class='wishlist_butt'])")
+        self.click_element("xpath=(//div[@class='wishlist_butt'])")
+        self.click_element("xpath=(//label[@class='link_site_style'])")
+        sleep(1)
+        self.find_element("list of wishlists")
+        self.click_element("list of wishlists")
+        self.click_element("wishlist view")
+        self.body_should_contain_text(pr_name, 'Selected product was not added to wishlist')
+        return self
+
     def choose_checkout_user(self, checkout_role, email=None, password=None):
         self.click_element("proceed to checkout button")
         self.click_element(checkout_role)
