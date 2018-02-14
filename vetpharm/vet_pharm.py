@@ -287,8 +287,8 @@ class VetoPharmHomePage(Page):
         if email==None:
             email= self.email_generator()
             password= self.gen_password()
-        elif email=='testnotification@vetpharm.fr':
-            password='kA6@S5n$u$'
+        elif email==sensitive_settings.register_email:
+            password=sensitive_settings.register_password
         self.click_element("login or register")
         self.click_element("register")
         sleep(2)
@@ -595,7 +595,7 @@ class VetoPharmHomePage(Page):
         reviews_before = self.get_text(reviews)
         self.click_element("write a review button")
         self.product_rating()
-        self.input_text('id=id_name_to_display', 'testnotification@vetpharm.fr')
+        self.input_text('id=id_name_to_display', sensitive_settings.register_email)
         review_input = self.find_element("xpath=(//textarea[@id='id_body'])")
         self.input_text(review_input, 'I have used this drug')
         self.click_element("submit a review button")
@@ -903,7 +903,7 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Proceed_to_checkout_and_create_account")
     def checkout_and_create_account(self):
-        new_email = 'testnotification@vetpharm.fr'
+        new_email = sensitive_settings.register_email
         self.choose_checkout_user("checkout with new a account", new_email)
         self.current_frame_contains('Create your account and then you will be redirected back to the checkout process')
         self.register_account(new_email)
@@ -916,7 +916,7 @@ class VetoPharmHomePage(Page):
         self.test_checkout_preview()
         self.click_element("place order")
         self.click_element("continue shopping")
-        self.delete_account('kA6@S5n$u$')
+        self.delete_account(sensitive_settings.register_password)
         return self
 
     @robot_alias("Proceed_to_checkout_as_logged_in_user")

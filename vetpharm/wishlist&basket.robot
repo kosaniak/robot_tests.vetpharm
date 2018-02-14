@@ -3,6 +3,7 @@ Documentation  Tests for https://vetpharm.fr
 
 Library  vet_pharm.py
 Library  vet_pharm.VetoPharmHomePage
+Variables  ../vetpharm/sensitive_settings.py
 
 Suite Teardown  Close Browser
 
@@ -24,8 +25,8 @@ Test if prices view can be selected
     Select Prices View
 
 Register a new account
-    ${password}=  register_account  testnotification@vetpharm.fr
-    Set Suite Variable  ${password}
+    ${account_password}=  register_account  ${register_email}
+    Set Suite Variable  ${account_password}
 
 Add product to wishlist from listing and delete it
     Add product to wishlist from listing
@@ -60,7 +61,7 @@ Add product to basket from recently viewed products and remove it
     Remove product from basket
 
 Delete account
-    Delete profile  ${password}
+    Delete profile  ${account_password}
 
 Test if login works for correct credentials
     Login into user account
