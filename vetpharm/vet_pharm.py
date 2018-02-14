@@ -435,7 +435,6 @@ class VetoPharmHomePage(Page):
             "The product quantity was not updated")
         return  self
 
-
     @robot_alias("Delete__product__from__wishlist")
     def delete_wishlist_product(self):
         self.click_element("wishlist settings")
@@ -555,7 +554,7 @@ class VetoPharmHomePage(Page):
         return self
 
     @robot_alias("Edit_a_review")
-    def edit_product_review(self):
+    def edit_review(self):
         self.focus('id=edit_review')
         self.click_element('id=edit_review')
         star = self.find_element("xpath=(//*[@id='edit_review_form']/div[1]/div/input)")
@@ -569,6 +568,7 @@ class VetoPharmHomePage(Page):
         asserts.assert_not_equal(prev_rate, new_rate, "Rating has been not changed")
         review_input = self.find_elements("xpath=(//textarea[@id='id_body'])")
         self.input_text(review_input[1], 'Great!')
+        sleep(2)
         self.click_element("xpath=(//button[contains(text(),'Save your review')])")
         sleep(2)
         self.verify_successful_editing()
@@ -757,6 +757,7 @@ class VetoPharmHomePage(Page):
     def add_checkout_address(self, names=None, city=None):
         self.click_element("new checkout address")
         self.type_in_box(city,"address autocomplete for checkout")
+        sleep(2)
         if city == 'berlin':
             self.click_element("berlin")
         elif city == 'geneva':
@@ -848,12 +849,12 @@ class VetoPharmHomePage(Page):
         self.click_element("paypal login btn")
         self.unselect_frame()
         sleep(10)
-        if not self._is_visible("paypal continue btn"):
-            self.reload_page()
-        self.wait_until_element_is_not_visible(("xpath=(//*[@id='spinner'])"), 25)
-        self.wait_until_element_is_enabled("paypal continue btn", 25)
+        while not self._is_visible("paypal continue btn"):
+            self.wait_until_element_is_not_visible(("xpath=(//*[@id='spinner'])"), 25)
+            self.wait_until_element_is_enabled("paypal continue btn", 25)
+        self.find_element("paypal continue btn")
         self.click_element("paypal continue btn")
-        self.wait_until_element_is_visible("place order")
+        self.wait_until_element_is_visible("place order", 30)
         self.click_element("place order")
         self.body_should_contain_text('Your order has been placed and a confirmation email has been sent - your order number is',
                                     "Expected order confirmation is not present")
@@ -881,10 +882,16 @@ class VetoPharmHomePage(Page):
             print total_purchase
         self.find_element("total product price excl vat")
         price_exl_vat = self.get_text("total product price excl vat")
+        print price_exl_vat
+        if len(price_exl_vat) >= 8 and price_exl_vat[-7] == ',':
+            price_exl_vat = price_exl_vat.replace(',','')
         price_exl_vat = float(price_exl_vat[1:])
+        print price_exl_vat
         asserts.assert_equal(total_purchase, price_exl_vat, "Total price does not exclude VAT")
         self.find_element("total product price incl vat")
         price_inc_vat = self.get_text("total product price incl vat")
+        if len(price_inc_vat) >= 8 and price_inc_vat[-7] == ',':
+            price_inc_vat = price_inc_vat.replace(',','')
         price_inc_vat = float(price_inc_vat[1:])
         asserts.assert_not_equal(price_exl_vat, price_inc_vat, "Total price does not exclude VAT")
         self.click_element("place order")
