@@ -532,12 +532,30 @@ class VetoPharmHomePage(Page):
         self.body_should_contain_text(pr_name, 'Selected product was not added to basket')
         return self
 
+    @robot_alias("Add__product__to__basket__from__recently__viewed__products")
+    def add_to_basket_from_recently_viewed(self, quantity=None):
+        self.product_preview_page()
+        recently_viewed = self.find_elements("xpath=(//article[@class='product_pod'])")
+        choose_prod = choice(recently_viewed)
+        sleep(4)
+        self.mouse_over(choose_prod)
+        add_to_basket = choose_prod.find_elements_by_tag_name("button")[-1]
+        self.mouse_over(add_to_basket)
+        self.click_element(add_to_basket)
+        self.wait_until_element_is_visible("xpath=(//*[@id='add-to-basket-modal']/div/div/div[4]/a[1])")
+        self.click_element("xpath=(//*[@id='add-to-basket-modal']/div/div/div[4]/a[1])")
+        sleep(2)
+        self._current_browser().back()
+        self.click_element("my basket")
+        return self
+
     def product_preview_page(self, search_filters=None):
         product = self.select_product(search_filters)
         pr_name = self.product_name(product)
         self.mouse_over(product)
         link = product.find_element_by_class_name('product_link')
         self.wait_until_element_is_enabled(link, 25)
+        self.focus(link)
         self.click_element(link)
         sleep(2)
         return pr_name
