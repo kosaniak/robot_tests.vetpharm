@@ -205,6 +205,13 @@ class VetoPharmHomePage(Page):
         self._current_browser().maximize_window()
         return self
 
+    def close_prev_window_tab(self):
+        handles = self._current_browser().get_window_handles()
+        self.select_window(handles[0])
+        self.close_window()
+        self.select_window()
+        return self
+
     @robot_alias("Login__into__user__account")
     def successful_login(self):
         self.login_into_acc(sensitive_settings.email, sensitive_settings.password)
@@ -310,13 +317,11 @@ class VetoPharmHomePage(Page):
         while self._page_contains("Thank you for registering on VetPharm!") is not True:
             self.reload_page()
             all_letters = self.find_activation_letter()
+            self.click_element(all_letters[0])
         self.select_frame("id=messagecontframe")
         self.focus("received email letters")
         self.click_element("received email letters")
-        handles = self._current_browser().get_window_handles()
-        self.select_window(handles[0])
-        self.close_window()
-        self.select_window()
+        self.close_prev_window_tab()
         return self
 
     def find_activation_letter(self):
