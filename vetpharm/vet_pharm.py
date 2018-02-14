@@ -183,7 +183,9 @@ class VetoPharmHomePage(Page):
         "issuance on prescription": "xpath=(//span[@class='item-name'][contains(text(),'Issuance on prescription')])",
         "livestock health program filter": "xpath=(//button[@class='filter-button']/span[contains(text(),'Livestock Health Program (LHP)')])",
         "LHP beef production": "xpath=(//span[@class='item-name'][contains(text(),'Beef production')])",
-        "out of stock filter": "xpath=(//span[@class='item-name'][contains(text(),'Unavailable (out of stock)')])"
+        "out of stock filter": "xpath=(//span[@class='item-name'][contains(text(),'Unavailable (out of stock)')])",
+        "drug list filter": "xpath=(//button[@class='filter-button']/span[contains(text(),'Drug list')])",
+        "drug list not applicable": "xpath=(//span[@class='item-name'][contains(text(),'Not applicable')])"
     }
 
     def gen_name(self, length):
