@@ -1,10 +1,13 @@
 from robotpageobjects import Page, robot_alias
+from robot.api import logger
+from robot.libraries.BuiltIn import BuiltIn
 from robot.utils import asserts
 from time import sleep
 from random import randint, choice
 from string import ascii_lowercase
 from itertools import islice
 import uuid
+import sensitive_settings
 from datetime import datetime
 
 
@@ -17,8 +20,6 @@ class VetoPharmHomePage(Page):
     # something other than the default "VetDoc Home Page"
     # at the end of keywords.
     name = "VetoPharm"
-    email = 'hostmaster@vetpharm.fr'
-    password = '6V9Dwa3ryiCBeEViSNdqEmpBG4EeSEeJ'
     TLDS = ('com net org mil edu de biz de ch at ru de tv com'
     'st br fr de nl dk ar jp eu it es com us ca pl')
     # inheritable dictionary mapping human-readable names
@@ -46,8 +47,8 @@ class VetoPharmHomePage(Page):
         "product quantity": "id=id_lines-0-quantity",
         "update quantity": "id=update-wish-quantities",
         "wishlist settings": "xpath=(//i[@class='fa fa-chevron-down'])",
-        "delete product": "xpath=(//a[contains(text(),'Remove')])",
-        "remove from wishlist": "xpath=(//button[@type='submit'][contains(text(),'Remove')])",
+        "delete product": "xpath=(//*[@id='column-wrapper']/div/form/ul/li/div[2]/ul/li/a)",
+        "remove from wishlist": "xpath=(//button[@class='btn btn-lg btn-danger'])",
         "create new wishlist": "xpath=(//div[@class='wish_butt'])",
         "wishlist name": "id=id_name",
         "save wishlist": "xpath=(//button[@class='btn btn-lg btn-primary'])",
@@ -67,7 +68,7 @@ class VetoPharmHomePage(Page):
         "questions list": "xpath=(//div[@class='helth-info col-sm-6'])",
         "all animals": "xpath=(//a[contains(text(),'My animals')])",
         "my prescriptions": "xpath=(//a[@href='/en-gb/health_centre/prescriptions/'])",
-        "add prescription": "xpath=(//a[@class='btn btn-primary'])",
+        "add prescription": "xpath=(//a[@class='btn border_site_style link_site_style'][contains(text(), 'Add a new prescription')])",
         "prescription title": "id=id_title",
         "save prescription": "id=ajax-save-prescription",
         "prescription date": "id=id_created_date",
@@ -79,7 +80,7 @@ class VetoPharmHomePage(Page):
         "list of vets": "xpath=(//div[@class='vet-search-results'])",
         "select veterinarian": "xpath=(//button[@class='btn btn-default link_site_style'][contains(text(),'Close')])",
         "add products": "id=add-products-under",
-        "search field": "xpath=(//div[@class='']/input[@id='id_title'])",
+        "search field": "xpath=(//*[@id='data-container']/form/div/div/input)",
         "search products": "id=ajax-search",
         "products list": "xpath=(//div[@class='products_list'])",
         "select product": "xpath=(//*[@id='add-products']/div/div/div[3]/button)",
@@ -92,7 +93,7 @@ class VetoPharmHomePage(Page):
         "selected currency": "xpath=(//div[@class='product_price']//i[@class='curr_logo'])",
         "user account": "xpath=(//div[@class='user-account'])",
         "my profile": "xpath=(//a[contains(text(),'My profile')])",
-        "edit profile": "xpath=(//a[contains(text(),'Edit profile')])",
+        "edit profile": "xpath=(//a[@class='btn link_site_style border_site_style edit_prof_btn'])",
         "delete profile": "id=delete_profile",
         "account pasword": "id=id_password",
         "delete account": "xpath=(//button[@class='btn btn-lg btn-danger'][contains(text(),'Delete')])",
@@ -103,7 +104,88 @@ class VetoPharmHomePage(Page):
         "availability filter": "xpath=(//button[@class='filter-button']/span[contains(text(),'Availability')])",
         "availiable product": "xpath=(//span[@class='item-name'][contains(text(),'Available')])",
         "prescription filter": "xpath=(//button[@class='filter-button']/span[contains(text(),'Prescription ?')])",
-        "no prescription": "xpath=(//span[@class='item-name'][contains(text(),'Issuance without prescription')])"
+        "no prescription": "xpath=(//span[@class='item-name'][contains(text(),'Issuance without prescription')])",
+        "add files to prescription": "id=add-files-under",
+        "add file": "xpath=(//div[@class='file-input-container'])",
+        "cancel new prescription": "xpath=(//a[@href='/en-gb/health_centre/prescriptions/'][contains(text(), Cancel)])",
+        "prescriptions list body": "xpath=(//*[@id='column-wrapper']/div/div[2]/div[3]/div/table/tbody)",
+        "prescriptions filter button": "id=select2-chosen-1",
+        "vet filter for prescriptions": "xpath=(//div[@class='select2-result-label'][contains(text(), 'Veterinarian')])",
+        "animals filter for prescriptions": "xpath=(//div[@class='select2-result-label'][contains(text(), 'Animals')])",
+        "groups filter for prescriptions": "xpath=(//div[@class='select2-result-label'][contains(text(), 'Group of animals')])",
+        "products filter for prescriptions":"xpath=(//div[@class='select2-result-label'][contains(text(), 'Products')])",
+        "prescription search field": "id=search-set-input",
+        "prescription search button": "xpath=(//button[@class='btn search_button border_site_style'])",
+        "found prescriptions list": "xpath=(//div[@class='list_prescription'])",
+        "clear button": "id=reset-btn",
+        "proceed to checkout button": "xpath=(//a[@class='btn btn-lg btn-primary'][contains(text(), 'Proceed to checkout')])",
+        "checkout guest": 'id=id_options_2',
+        "continue checkout button": "xpath=(//button[@class='btn btn-lg btn-block btn-primary'][contains(text(),'Continue')])",
+        "user email for checkout": "id=id_username",
+        "new checkout address": "xpath=(//button[@class='btn new_addr'])",
+        "address autocomplete for checkout": "id=id_autocomplete",
+        "checkout with account": "id=id_options_0",
+        "checkout company": "xpath=(//label[@for='company_2'][contains(text(), 'Quintagroup')])",
+        "proceed company checkout": "xpath=(//button[@class='btn btn-primary'][contains(text(), 'Proceed')])",
+        "added checkout addresses": "xpath=(//div[@class='choose-block'])",
+        "checkout address": "xpath=(//button[@class='btn btn-primary btn-large ship-address'])",
+        "business parcel delivery": "xpath=(.//*[@id='3']/div[1]/div/div[4]/form/button)",
+        "select paypal": "xpath=(//*[@id='default']/div[1]/div/div[3]/div[1]/div[1]/div[5]/div[2]/form/button)",
+        "paypal login frame": "xpath=(//iframe[@name='injectedUl'])",
+        "paypal email": "xpath=(//*[@id='email'])",
+        "paypal password": "xpath=(//*[@id='password'])",
+        "paypal login btn": "xpath=(//*[@id='btnLogin'])",
+        "paypal continue btn": "id=button",
+        "place order": "id=place-order",
+        "continue shopping": "xpath=(//a[@class='btn btn-primary btn-block btn-lg'][contains(text(), 'Continue shopping')])",
+        "berlin": "xpath=(//div[@class='pac-item']/span[contains(text(), 'Europaplatz, Berlin, Germany')])",
+        "continue checkout": "xpath=(//button[@class='btn btn-lg btn-primary'])",
+        "select paybox": "xpath=(//*[@id='default']/div[1]/div/div[3]/div[1]/div[1]/div[3]/div[2]/form/button)",
+        "paybox cardnumber": "xpath=(//*[@id='id_number'])",
+        "paybox ccv number": "xpath=(//*[@id='id_ccv'])",
+        "continue paybox payment": "xpath=(//button[@class='btn btn-large btn-primary'])",
+        "view order status": "xpath=(//a[@class='btn btn-primary'][contains(text(), 'View order status')])",
+        "checkout with new a account": 'id=id_options_1',
+        "my basket": "xpath=(//li[@class='my-basket'])",
+        "paris": "xpath=(//div[@class='pac-item']/span[contains(text(), 'France')])",
+        "pick up at the pharmacy": "xpath=(//*[@id='default']/div[1]/div/div[3]/div[1]/div[1]/div[2]/div/div/div[3]/form/button)",
+        "select bank transfer": "xpath=(//*[@id='default']/div[1]/div/div[3]/div[1]/div[1]/div[2]/div[2]/form/button)",
+        "received email letters": "xpath=(//*[@id='message-htmlpart1']/div/p[2]/a)",
+        "paypal email login": "xpath=(//form[@name='login']//input[@id='email'])",
+        "paypal password login": "xpath=(//form[@name='login']//input[@id='password'])",
+        "home delivery": "xpath=(//*[@id='2']/div/div/div[3]/form/button)",
+        "geneva": "xpath=(//div[@class='pac-item']/span[contains(text(), 'Switzerland')])",
+        "bank cheque": "xpath=(//*[@id='default']/div[1]/div/div[3]/div[1]/div[1]/div[1]/div[2]/form/button)",
+        "dashboard": "xpath=(//a[contains(text(),'Dashboard')])",
+        "dashboard content": "xpath=(//*[@id='default']/nav[2]/div/div[2]/ul/li[6]/a)",
+        "dashboard reviews": "xpath=(//a[contains(text(),'Reviews')])",
+        "les gets": "xpath=(//div[@class='pac-item']/span[contains(text(), 'Presnoy, France')])",
+        "flex delivery service": "xpath=(//*[@id='2']/div[2]/div/div[3]/form/button)",
+        "during pickup payment": "xpath=(//*[@id='default']/div[1]/div/div[3]/div[1]/div[1]/div[4]/div[2]/form/button)",
+        "write a review button": "xpath=(//*[@id='column-wrapper']/div/div[2]/section[1]/div/div/div[3]/div/div[1]/p[2]/small/a[2])",
+        "all reviews before": "xpath=(//*[@id='column-wrapper']/div/div[2]/section[1]/div/div/div[3]/div/div[1]/p[2]/small/a[1])",
+        "submit a review button": "xpath=(//button[@class='btn btn-primary btn-lg'])",
+        "all reviews after": "xpath=(//*[@id='column-wrapper']/div/div[2]/section[1]/div/div/div[3]/div/div[1]/p[2]/small/a)",
+        "filter reviews": "xpath=(//button[@class='btn btn-primary top-spacer'])",
+        "rating stars box editing": "xpath=(//*[@id='edit_review_form']/div[1]/div/div[1])",
+        "rating stars box": "xpath=(//*[@id='add_review_form']/fieldset/div[1]/div/div[1])",
+        "total product price excl vat": "xpath=(//*[@id='basket_totals']/div[1]/ul/li[1]/span)",
+        "total product price incl vat": "xpath=(//*[@id='basket_totals']/div[1]/ul/li[3]/span)",
+        "add to basket from preview": "xpath=(//*[@id='add-to-basket-modal']/div/div/div[4]/a[1])",
+        "unreferenced product": "xpath=(//span[@class='item-name'][contains(text(),'Unreferenced product')])",
+        "unreferenced product (medicated feeds)": "xpath=(//span[@class='item-name'][contains(text(),'Unreferenced product (For the manufacture of medicated feeds)')])",
+        "manufacturing suspended": "xpath=(//span[@class='item-name'][contains(text(),'Manufacturing suspended')])",
+        "manufacturing stopped": "xpath=(//span[@class='item-name'][contains(text(),'Manufacturing stopped')])",
+        "marketing auth suspended": "xpath=(//span[@class='item-name'][contains(text(),'Marketing authorisation suspended')])",
+        "prescription required": "xpath=(//span[@class='item-name'][contains(text(),'Prescription required. Dispensing is prohibited to public')])",
+        "category filter": "xpath=(//button[@class='filter-button']/span[contains(text(),'Category')])",
+        "veterinary drugs": "xpath=(//span[@class='item-name'][contains(text(),'Veterinary drugs')])",
+        "issuance on prescription": "xpath=(//span[@class='item-name'][contains(text(),'Issuance on prescription')])",
+        "livestock health program filter": "xpath=(//button[@class='filter-button']/span[contains(text(),'Livestock Health Program (LHP)')])",
+        "LHP beef production": "xpath=(//span[@class='item-name'][contains(text(),'Beef production')])",
+        "out of stock filter": "xpath=(//span[@class='item-name'][contains(text(),'Unavailable (out of stock)')])",
+        "drug list filter": "xpath=(//button[@class='filter-button']/span[contains(text(),'Drug list')])",
+        "drug list not applicable": "xpath=(//span[@class='item-name'][contains(text(),'Not applicable')])"
     }
 
     def gen_name(self, length):
@@ -125,16 +207,23 @@ class VetoPharmHomePage(Page):
         self._current_browser().maximize_window()
         return self
 
+    def close_prev_window_tab(self):
+        handles = self._current_browser().get_window_handles()
+        self.select_window(handles[0])
+        self.close_window()
+        self.select_window()
+        return self
+
     @robot_alias("Login__into__user__account")
     def successful_login(self):
-        self.login_into_acc(self.email, self.password)
+        self.login_into_acc(sensitive_settings.email, sensitive_settings.password)
         self.body_should_contain_text('Welcome back', 
             'Login failed for user')
         return self
 
     @robot_alias("Try__to__login__with__incorrect__credentials")
     def unsuccessful_login(self):
-        self.login_into_acc(self.email_generator(), self.gen_password())
+        self.login_into_acc(sensitive_settings.email_generator(), sensitive_settings.gen_password())
         self.body_should_contain_text('Please enter a correct username and password. Note that both fields may be case-sensitive', 
             'No alert message about incorrect credentials')
         return self
@@ -162,21 +251,21 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Try__to__register__already__taken__email")
     def taken_email_registration(self):
-        self.register(self.email, self.password)
+        self.register_account(sensitive_settings.email, sensitive_settings.password)
         self.body_should_contain_text('A user with that email address already exists', 
             'Successful registration for already taken email')
         return self
 
     @robot_alias("Try__to__register__the __invalid__email")
     def invalid_email_registration(self):
-        self.register(self.email_generator()[:-5])
+        self.register_account(self.email_generator()[:-5])
         self.body_should_contain_text('Enter a valid email address',
             'Successful registration for invalid email address')
         return self
 
     @robot_alias("Use__too__short__password")
     def invalid_password_registration(self):
-        self.register(self.email_generator(), self.gen_password()[:3])
+        self.register_account(self.email_generator(), self.gen_password()[:3])
         self.body_should_contain_text('Ensure this value has at least 6 characters (it has',
             'No alert message about insecure password')
         return self
@@ -194,17 +283,12 @@ class VetoPharmHomePage(Page):
             'No alert message about password confirmation fail')
         return self
 
-    def register_account(self):
-        password=self.register()     
-        self.body_should_contain_text('Thanks for registering!',
-            'Registration Failed')
-        return password 
-
-    def register(self, email=None, password=None):
-        if password==None: 
-            password= self.gen_password()
+    def register_account(self, email=None):
         if email==None:
             email= self.email_generator()
+            password= self.gen_password()
+        elif email==sensitive_settings.register_email:
+            password=sensitive_settings.register_password
         self.click_element("login or register")
         self.click_element("register")
         sleep(2)
@@ -212,22 +296,61 @@ class VetoPharmHomePage(Page):
         self.type_in_box(password, "registration password")
         self.type_in_box(password, "confirm password")
         self.click_button("registration submit")
+        sleep(3)
+        if self._page_contains('To activate your account, please click the link sent to your mailbox'):
+            self.activate_new_account(email, password)
+            sleep(5)
+            self.body_should_contain_text('Your account was confirmed successfully',
+                'The account was not activated')
         return password
+
+    def activate_new_account(self, email, password):
+        self._current_browser().get('https://mail29.lwspanel.com/webmail/')
+        if self._is_element_present("id=rcmloginuser"):
+            self.type_in_box(email, "id=rcmloginuser")
+            self.type_in_box(password, "id=rcmloginpwd")
+            self.click_element("id=rcmloginsubmit")
+        all_letters = self.find_activation_letter()
+        while all_letters == []:
+            self.reload_page()
+            all_letters = self.find_activation_letter()
+        self.click_element(all_letters[0])
+        sleep(3)
+        while self._page_contains("Thank you for registering on VetPharm!") is not True:
+            self.reload_page()
+            all_letters = self.find_activation_letter()
+            self.click_element(all_letters[0])
+        self.select_frame("id=messagecontframe")
+        self.focus("received email letters")
+        self.click_element("received email letters")
+        self.close_prev_window_tab()
+        return self
+
+    def find_activation_letter(self):
+        self.wait_until_element_is_enabled("id=mailview-top", 25)
+        body = self.find_element("id=mailview-top")
+        all_letters = body.find_elements_by_xpath("//td[@class='subject']")
+        return all_letters
 
     @robot_alias("Delete__profile")
     def delete_account(self, password):
         self.click_element("user account")
         self.click_element("my profile")
+        self.click_element_at_coordinates("edit profile", 875, 867)
         self.click_element("edit profile")
+        self.click_element_at_coordinates("delete profile", 1295, 867)
         self.click_element("delete profile")
+        sleep(1)
         self.type_in_box(password, "account pasword")
         self.click_element("delete account")
         self.body_should_contain_text("Your profile has now been deleted. Thanks for using the site", "Profile was not deleted")
         return self    
 
     def type_in_box(self, txt, search_box):
-        for i in range(len(txt)):
-            self.input_text(search_box, txt[0:i+1])
+        logger.info("Typing text '%s' into text field '%s'." % (txt, search_box))
+        for letter in txt:
+            self.find_element(search_box).send_keys(letter)
+            sleep(0.25)
         return self
         
     def body_should_contain_text(self, str, error_message, ignore_case=True):
@@ -286,16 +409,54 @@ class VetoPharmHomePage(Page):
             'Price view does not include tax information')
         return self
 
-    @robot_alias("Add__product__to__wishlist")
-    def add_to_wishlist(self):
+    @robot_alias("Add__product__to__wishlist__from__listing")
+    def add_to_wishlist_from_listing(self):
         product = self.select_product()
         self.mouse_over(product)
-        wishlist= product.find_elements_by_tag_name('i')
+        wishlist= product.find_element_by_tag_name('i')
         default_wishlist= product.find_elements_by_tag_name('label')
         pr_name = self.product_name(product)
-        self.click_element(wishlist[0])
+        self.click_element(wishlist)
         sleep(2)
         self.click_element(default_wishlist[0])
+        self.find_element("list of wishlists")
+        self.click_element("list of wishlists")
+        self.click_element("wishlist view")
+        self.body_should_contain_text(pr_name, 'Selected product was not added to wishlist')
+        return self
+
+    @robot_alias("Add__product__to__wishlist__from__product__page")
+    def add_to_wishlist_from_product_page(self):
+        pr_name = self.product_preview_page()
+        print pr_name
+        self.click_element("xpath=(//div[@class='wishlist_butt'])")
+        self.click_element("xpath=(//label[@class='link_site_style'])")
+        sleep(1)
+        self.find_element("list of wishlists")
+        self.click_element("list of wishlists")
+        self.click_element("wishlist view")
+        self.body_should_contain_text(pr_name, 'Selected product was not added to wishlist')
+        return self
+
+    @robot_alias("Add__product__to__wishlist__from__recently__viewed")
+    def add_to_wishlist_from_recently_viewed(self):
+        i = 0
+        while i < 5:
+            self.product_preview_page()
+            i += 1
+            print i
+        recently_viewed = self.find_elements("xpath=(//article[@class='product_pod'])")
+        choose_prod = choice(recently_viewed)
+        self.focus(choose_prod)
+        self.mouse_over(choose_prod)
+        wishlist= choose_prod.find_element_by_tag_name('i')
+        default_wishlist= choose_prod.find_elements_by_tag_name('label')
+        pr_name = self.product_name(choose_prod)
+        sleep(2)
+        self.click_element(wishlist)
+        sleep(2)
+        self.click_element(default_wishlist[0])
+        self.find_element("list of wishlists")
         self.click_element("list of wishlists")
         self.click_element("wishlist view")
         self.body_should_contain_text(pr_name, 'Selected product was not added to wishlist')
@@ -303,13 +464,13 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Update__quantity__in__whishlist")
     def update_quantity(self):
-        self.type_in_box('3', "product quantity" )
+        self.find_element("product quantity")
+        self.input_text("product quantity", '3')
         self.click_element("update quantity")
         box_value= self.find_element("product quantity").get_attribute('value')
         asserts.assert_true(box_value =='3', 
             "The product quantity was not updated")
         return  self
-
 
     @robot_alias("Delete__product__from__wishlist")
     def delete_wishlist_product(self):
@@ -323,7 +484,7 @@ class VetoPharmHomePage(Page):
     def create_wishlist(self):
         self.click_element("list of wishlists")
         self.click_element("create new wishlist")
-        self.type_in_box('For my cat', "wishlist name")
+        self.input_text("wishlist name", 'For my cat')
         self.click_element("save wishlist")
         self.body_should_contain_text('Your wishlist has been created', 'Wishlist was not created')
         self.click_element("list of wishlists")
@@ -345,31 +506,70 @@ class VetoPharmHomePage(Page):
         return self
 
     @robot_alias("Add__product__to__basket")
-    def add_to_basket(self):
+    def add_to_basket_from_listing(self):
         product = self.select_product()
         pr_name = self.product_name(product)
         self.mouse_over(product)
         add_to_basket=product.find_elements_by_tag_name("button")[-1]
         self.click_element(add_to_basket)
+        sleep(2)
         self._current_browser().back()
         self.click_element("add to basket")
         self.body_should_contain_text(pr_name, 'Selected product was not added to basket')
         return self
 
-    @robot_alias("Remove__product__from__basket")
-    def delete_product(self):
-        self.click_element("delete from basket")
-        self.body_should_contain_text('Your basket is empty.', 'Selected product was not deleted from basket')
+    @robot_alias("Add__product__to__basket__from__preview")
+    def add_to_basket_from_preview(self, quantity=None):
+        pr_name = self.product_preview_page()
+        if quantity != None:
+            quantity_box = self.find_elements("xpath=(//input[@id='id_quantity'])")
+            self.input_text(quantity_box[0], quantity)
+        self.click_element("xpath=(//*[@id='add_to_basket_form_main']/button)")
+        sleep(1)
+        self.click_element("add to basket from preview")
+        self._current_browser().back()
+        self.click_element("add to basket")
+        self.body_should_contain_text(pr_name, 'Selected product was not added to basket')
         return self
 
-    def select_product(self):
+    @robot_alias("Add__product__to__basket__from__recently__viewed__products")
+    def add_to_basket_from_recently_viewed(self, quantity=None):
+        self.product_preview_page()
+        recently_viewed = self.find_elements("xpath=(//article[@class='product_pod'])")
+        choose_prod = choice(recently_viewed)
+        sleep(4)
+        self.mouse_over(choose_prod)
+        add_to_basket = choose_prod.find_elements_by_tag_name("button")[-1]
+        self.mouse_over(add_to_basket)
+        self.click_element(add_to_basket)
+        self.wait_until_element_is_visible("xpath=(//*[@id='add-to-basket-modal']/div/div/div[4]/a[1])")
+        self.click_element("xpath=(//*[@id='add-to-basket-modal']/div/div/div[4]/a[1])")
+        sleep(2)
+        self._current_browser().back()
+        self.click_element("my basket")
+        return self
+
+    def product_preview_page(self, search_filters=None):
+        product = self.select_product(search_filters)
+        pr_name = self.product_name(product)
+        self.mouse_over(product)
+        link = product.find_element_by_class_name('product_link')
+        self.wait_until_element_is_enabled(link, 25)
+        self.focus(link)
+        self.click_element(link)
+        sleep(2)
+        return pr_name
+
+    def select_product(self, search_filters=None):
         self.click_element("all products")
-        self.click_element("search filters")
-        self.click_element("availability filter")
-        self.click_element("availiable product")
-        self.click_element("search filters")
-        self.click_element(("prescription filter"))
-        self.click_element("no prescription")
+        if search_filters != False:
+            self.wait_until_element_is_visible("search filters")
+            self.click_element("search filters")
+            self.click_element("availability filter")
+            self.click_element("availiable product")
+            self.click_element("search filters")
+            self.click_element(("prescription filter"))
+            self.click_element("no prescription")
         products_list= self.find_element("list of products")
         products= products_list.find_elements_by_tag_name("article")
         product= choice(products)
@@ -380,6 +580,93 @@ class VetoPharmHomePage(Page):
         product_name= self.get_text(pr_name)
         return product_name
 
+    @robot_alias("Remove__product__from__basket")
+    def delete_product(self):
+        self.click_element("delete from basket")
+        self.body_should_contain_text('Your basket is empty.', 'Selected product was not deleted from basket')
+        return self
+
+    @robot_alias("Write_a_review_and_evaluate_product")
+    def write_product_review(self):
+        pr_name = self.product_preview_page(False)
+        while self._is_element_present("write a review button") != True:
+            pr_name = self.product_preview_page(False)
+        reviews = self.find_element("all reviews before")
+        reviews_before = self.get_text(reviews)
+        self.click_element("write a review button")
+        self.product_rating()
+        self.input_text('id=id_name_to_display', sensitive_settings.register_email)
+        review_input = self.find_element("xpath=(//textarea[@id='id_body'])")
+        self.input_text(review_input, 'I have used this drug')
+        self.click_element("submit a review button")
+        sleep(5)
+        reviews_after = self.get_text("all reviews after")
+        body_txt = self.get_text("css=body").encode("utf-8").lower()
+        asserts.assert_not_equal(reviews_before, reviews_after, "Review has been not submitted")
+        asserts.assert_false('Write a review' in body_txt, "Review has been not submitted")
+        self.page_should_contain('Thank you for reviewing this product', 'Review has been not submitted')
+        self.page_should_contain_element('id=edit_review', 'It is not possible to edit a review')
+        return self
+
+    @robot_alias("Edit_a_review")
+    def edit_review(self):
+        self.focus('id=edit_review')
+        self.click_element('id=edit_review')
+        star = self.find_element("xpath=(//*[@id='edit_review_form']/div[1]/div/input)")
+        prev_rate = star.get_attribute('value')
+        sleep(3)
+        updated_rate = self.product_rating(True)
+        new_rate = updated_rate.get_attribute('value')
+        if prev_rate == new_rate:
+            updated_rate = self.product_rating()
+            new_rate = updated_rate.get_attribute('value')
+        asserts.assert_not_equal(prev_rate, new_rate, "Rating has been not changed")
+        review_input = self.find_elements("xpath=(//textarea[@id='id_body'])")
+        self.input_text(review_input[1], 'Great!')
+        sleep(2)
+        self.click_element("xpath=(//button[contains(text(),'Save your review')])")
+        sleep(2)
+        self.verify_successful_editing()
+        return self
+
+    @robot_alias("Delete_a_review")
+    def delete_review(self):
+        self.click_element('user account')
+        self.click_element('dashboard')
+        self.click_element('dashboard content')
+        self.click_element('dashboard reviews')
+        self.input_text('id=id_name', 'john')
+        self.click_element("filter reviews")
+        sleep(3)
+        self.click_element("xpath=(//button[@class='btn btn-default dropdown-toggle'])")
+        self.click_element("xpath=(//a[contains(text(),'Delete')])")
+        sleep(1)
+        self.click_element("xpath=(//button[@class='btn btn-danger'])")
+        sleep(1)
+        self.back_to_website()
+        return self
+
+    def verify_successful_editing(self):
+        self.click_element("xpath=(//*[@id='product-reviews']/div/h2)")
+        self.find_element('id=product-reviews')
+        all_reviews = self.get_text('id=product-reviews')
+        asserts.assert_true('Great!' in all_reviews, "The review has not been edited")
+        return self
+
+    def product_rating(self, edit=None):
+        if edit == True:
+            star_box = self.find_element("rating stars box editing")
+        else:
+            star_box = self.find_element("rating stars box")
+        stars = star_box.find_elements_by_tag_name('i')
+        print stars
+        prod_star = choice(stars)
+        print prod_star
+        self.mouse_over(prod_star)
+        sleep(3)
+        self.wait_until_element_is_visible(prod_star)
+        self.click_element(prod_star)
+        return prod_star
 
     @robot_alias("Add__an__animal")
     def add_animal(self):
@@ -509,4 +796,288 @@ class VetoPharmHomePage(Page):
         for question in questions[1:5]:
             answer = question.find_elements_by_tag_name("label")
             self.click_element(choice(answer))
+        return self
+
+    @robot_alias("Redirect_to_purchase_from_bovi-pharm")
+    def redirect_from_bovi_pharm(self):
+        self._current_browser().get('https://bovi-pharm.devel.vetopharm.quintagroup.com/en-gb/')
+        self.wait_until_element_is_visible("search filters")
+        self.click_element("search filters")
+        self.click_element("drug list filter")
+        self.click_element("drug list not applicable")
+        sleep(2)
+        products_list= self.find_element("list of products")
+        products= products_list.find_elements_by_tag_name("article")
+        prod = choice(products)
+        pr_name = self.product_name(prod)
+        print pr_name
+        self.mouse_over(prod)
+        link = prod.find_element_by_class_name('product_link')
+        self.click_element(link)
+        sleep(1)
+        name = self.find_element("xpath=(//div[@class='descktop-product-header']/h1)")
+        pr_name = self.get_text(name)
+        redirect = self.find_element("xpath=(//i[@class='fa fa-external-link'])")
+        print redirect
+        self.mouse_over(redirect)
+        self.wait_until_element_is_visible(redirect, 25)
+        self.click_element(redirect)
+        print 777
+        sleep(7)
+        self.close_prev_window_tab()
+        self.wait_until_element_is_enabled("xpath=(//div[@class='wishlist_butt'])")
+        self.click_element("xpath=(//div[@class='wishlist_butt'])")
+        self.click_element("xpath=(//label[@class='link_site_style'])")
+        sleep(1)
+        self.find_element("list of wishlists")
+        self.click_element("list of wishlists")
+        self.click_element("wishlist view")
+        self.body_should_contain_text(pr_name, 'Selected product was not added to wishlist')
+        return self
+
+    def choose_checkout_user(self, checkout_role, email=None, password=None):
+        self.click_element("proceed to checkout button")
+        self.click_element(checkout_role)
+        if checkout_role == "checkout with account":
+            self.type_in_box(sensitive_settings.email,"user email for checkout")
+            self.type_in_box(sensitive_settings.password,"account pasword")
+        else:
+            self.type_in_box(email,"user email for checkout")
+        self.click_element("continue checkout button")
+        return self
+
+    def add_checkout_address(self, names=None, city=None):
+        self.click_element("new checkout address")
+        self.type_in_box(city,"address autocomplete for checkout")
+        sleep(2)
+        if city == 'berlin':
+            self.click_element("berlin")
+        elif city == 'geneva':
+            self.click_element("geneva")
+            self.type_in_box('Place Dorciere',"id=id_line1")
+            self.type_in_box('1201',"id=id_postcode")
+        elif city == 'les gets':
+            self.click_element("les gets")
+            self.type_in_box('Rue du Ctre',"id=id_line1")
+        else:
+            self.click_element("paris")
+            self.type_in_box('Avenue Anatole',"id=id_line1")
+            self.type_in_box('75007',"id=id_postcode")
+        if names == True:
+            self.type_in_box(self.gen_name(6),"id=id_first_name")
+            self.type_in_box(self.gen_name(10),"id=id_last_name")
+        self.click_element("continue checkout")
+        return self
+
+    @robot_alias("Proceed_to_checkout_as_guest")
+    def checkout_as_guest_paybox(self):
+        guest_email= self.email_generator()
+        self.choose_checkout_user("checkout guest", email=guest_email)
+        self.add_checkout_address(names=True, city='berlin')
+        self.add_checkout_address(city='berlin')
+        self.click_element("home delivery")
+        self.click_element("select paybox")
+        self.type_in_box('1111222233334444', "paybox cardnumber")
+        self.type_in_box('123', "paybox ccv number")
+        self.click_element("continue paybox payment")
+        self.test_checkout_preview()
+        self.click_element("place order")
+        self.click_element("view order status")
+        self.body_should_contain_text('Pending', 'The payment status is other than %s' % ('Pending'))
+        self._current_browser().back()
+        self.click_element("continue shopping")
+        return self
+
+    @robot_alias("Checkout_as_guest_with_payment_during_pickup")
+    def checkout_as_guest_pickup_payment(self):
+        guest_email= self.email_generator()
+        self.choose_checkout_user("checkout guest", email=guest_email)
+        self.add_checkout_address(names=True, city='les gets')
+        self.add_checkout_address(city='les gets')
+        self.click_element("flex delivery service")
+        self.click_element("during pickup payment")
+        self.test_checkout_preview()
+        self.click_element("place order")
+        self.click_element("continue shopping")
+        return self
+
+    @robot_alias("Proceed_to_checkout_and_create_account")
+    def checkout_and_create_account(self):
+        new_email = sensitive_settings.register_email
+        self.choose_checkout_user("checkout with new a account", new_email)
+        self.current_frame_contains('Create your account and then you will be redirected back to the checkout process')
+        self.register_account(new_email)
+        self.click_element("my basket")
+        self.click_element("proceed to checkout button")
+        self.add_checkout_address(names=True, city='paris')
+        self.add_checkout_address(city='paris')
+        self.click_element("pick up at the pharmacy")
+        self.click_element("select bank transfer")
+        self.test_checkout_preview()
+        self.click_element("place order")
+        self.click_element("continue shopping")
+        self.delete_account(sensitive_settings.register_password)
+        return self
+
+    @robot_alias("Proceed_to_checkout_as_logged_in_user")
+    def checkout_as_logged_in_user(self):
+        self.choose_checkout_user("checkout with account")
+        self.click_element("checkout company")
+        self.click_element("proceed company checkout")
+        self.click_element("checkout address")
+        self.click_element("checkout address")
+        self.click_element("business parcel delivery")
+        self.click_element_at_coordinates("select paypal", 1284, 913)
+        self.click_element("select paypal")
+        self.wait_until_element_is_visible('paypal login frame')
+        self.select_frame('paypal login frame')
+        sleep(1)
+        username = self.get_webelements("paypal email login")[0]
+        self.input_text(username, 'pharmacyshoptest-buyer@gmail.com')
+        password = self.get_webelements("paypal password login")[0]
+        self.input_text(password, 'X4ttLgRtAj61')
+        sleep(2)
+        self.wait_until_element_is_enabled("paypal login btn")
+        self.click_element("paypal login btn")
+        self.unselect_frame()
+        sleep(10)
+        while not self._is_visible("paypal continue btn"):
+            self.wait_until_element_is_not_visible(("xpath=(//*[@id='spinner'])"), 25)
+            self.wait_until_element_is_enabled("paypal continue btn", 25)
+        self.find_element("paypal continue btn")
+        self.click_element("paypal continue btn")
+        self.wait_until_element_is_visible("place order", 30)
+        self.click_element("place order")
+        self.body_should_contain_text('Your order has been placed and a confirmation email has been sent - your order number is',
+                                    "Expected order confirmation is not present")
+        self.click_element("continue shopping")
+        self.log_out()
+        return self
+
+    @robot_alias("Proceed_to_checkout_exluding_vat")
+    def checkout_exluding_vat(self):
+        guest_email= self.email_generator()
+        self.choose_checkout_user("checkout guest", email=guest_email)
+        self.add_checkout_address(names=True, city='geneva')
+        self.add_checkout_address(city='geneva')
+        self.click_element("pick up at the pharmacy")
+        self.click_element("bank cheque")
+        sleep(3)
+        self.body_should_contain_text('YOUR ORDER IS EXEMPT FROM FRENCH VAT (VAT = 0%).', "Total price does not exclude VAT")
+        self.find_element("xpath=(//div[@class='order_content'])")
+        all_prices = self.get_webelements("xpath=(//p[@class='price_color change_curr'])")
+        total_purchase = 0
+        for item in all_prices:
+            price = item.get_attribute('data-value')
+            print price
+            total_purchase += float(price)
+            print total_purchase
+        self.find_element("total product price excl vat")
+        price_exl_vat = self.get_text("total product price excl vat")
+        print price_exl_vat
+        if len(price_exl_vat) >= 8 and price_exl_vat[-7] == ',':
+            price_exl_vat = price_exl_vat.replace(',','')
+        price_exl_vat = float(price_exl_vat[1:])
+        print price_exl_vat
+        asserts.assert_equal(total_purchase, price_exl_vat, "Total price does not exclude VAT")
+        self.find_element("total product price incl vat")
+        price_inc_vat = self.get_text("total product price incl vat")
+        if len(price_inc_vat) >= 8 and price_inc_vat[-7] == ',':
+            price_inc_vat = price_inc_vat.replace(',','')
+        price_inc_vat = float(price_inc_vat[1:])
+        asserts.assert_not_equal(price_exl_vat, price_inc_vat, "Total price does not exclude VAT")
+        self.click_element("place order")
+        self.click_element("continue shopping")
+        return self
+
+    def test_checkout_preview(self):
+        preview_text = ['Shipping address', 'Billing address', 'Shipping method', 'Payment', 'Products']
+        for item in preview_text:
+            self.body_should_contain_text(item, '%s is not present in the preview of payment' % item)
+        return self
+
+    @robot_alias("Verify_unreferenced_product_label")
+    def unreferenced_label(self):
+        locator = ("xpath=(//div[@class='availability-label no_price'])")
+        self.search_filter_labels("availability filter", 'unreferenced product', locator)
+        return self
+
+    @robot_alias("Verify_unreferenced_product_label_for_the_manufacture_of_medicated_feeds")
+    def unreferenced_label_medicated_feeds(self):
+        locator = ("xpath=(//div[@class='availability-label medicated_feeds'])")
+        self.search_filter_labels("availability filter", 'unreferenced product (medicated feeds)', locator)
+        return self
+
+    @robot_alias("Verify_manufactoring_suspended_label")
+    def manufacturing_suspended_label(self):
+        locator = ("xpath=(//div[@class='availability-label manufactoring_suspended'])")
+        self.search_filter_labels("availability filter", 'manufacturing suspended', locator)
+        return self
+
+    @robot_alias("Verify_manufactoring_stopped_label")
+    def manufacturing_stopped_label(self):
+        locator = ("xpath=(//div[@class='availability-label manufactoring_stopped'])")
+        self.search_filter_labels("availability filter", 'manufacturing stopped', locator)
+        return self
+
+    @robot_alias("Verify_marketing_authorisation_suspended_label")
+    def marketing_auth_suspended_label(self):
+        locator = ("xpath=(//div[@class='availability-label marketing_auth_suspended'])")
+        self.search_filter_labels("availability filter", 'marketing auth suspended', locator)
+        return self
+
+    @robot_alias("Verify_unavailable_out_of_stock_label")
+    def unavailable_out_of_stock_label(self):
+        locator = ("xpath=(//div[@class='availability-label unavailable_stock'])")
+        self.search_filter_labels("availability filter", 'out of stock filter', locator)
+        return self
+
+    @robot_alias("Verify_prescription_required_label")
+    def prescription_required_only_vets(self):
+        locator = ("xpath=(//div[@class='availability-label prescription_only_vets'])")
+        self.search_filter_labels("availability filter", 'prescription required', locator)
+        return self
+
+    @robot_alias("Verify_veterinary_drugs_label")
+    def veterinary_drugs_label(self):
+        locator = ("xpath=(//span[@class='is_drug availability-label'])")
+        self.search_filter_labels("category filter", 'veterinary drugs', locator)
+        return self
+
+    @robot_alias("Verify_issuance_on_prescription_label")
+    def issuance_on_prescription_label(self):
+        locator = ("xpath=(//span[@class='sur-ordonnance availability-label'])")
+        self.search_filter_labels("prescription filter", 'issuance on prescription', locator)
+        return self
+
+    @robot_alias("Verify_livestock_health_program_filter")
+    def livestock_health_program_label(self):
+        locator = ("xpath=(//span[@class='bilan-sanitaire LHP availability-label'])")
+        self.search_filter_labels("livestock health program filter", 'LHP beef production', locator)
+        return self
+
+    def search_filter_labels(self, search_filter, subfilter_name, label_locator):
+        self.click_element("all products")
+        self.search_labels_in_pages(search_filter, subfilter_name, label_locator)
+        if self._is_visible("xpath=(//li[@class='next'])") != None:
+            second_page = self.find_elements("xpath=(//li[@class='next'])")
+            self.search_labels_in_pages(search_filter, subfilter_name, label_locator, second_page[0])
+        if self._is_visible("xpath=(//li[@class='new_page'])"):
+            last_page = self.find_elements("xpath=(//li[@class='new_page'])")
+            if len(last_page) == 2:
+                self.search_labels_in_pages(search_filter, subfilter_name, label_locator, last_page[1])
+        return self
+
+    def search_labels_in_pages(self, search_filter, subfilter_name, label_locator, page=None):
+        if page == None:
+            self.wait_until_element_is_visible("search filters")
+            self.click_element("search filters")
+            self.click_element(search_filter)
+            self.click_element(subfilter_name)
+            sleep(1)
+        else:
+            self.click_element(page)
+        search_results = self.find_elements("xpath=(//article[@class='product_pod'])")
+        labels = self.find_elements(label_locator)
+        asserts.assert_equal(len(labels), len(search_results), "Label %s is not found in some elements" % subfilter_name)
         return self
