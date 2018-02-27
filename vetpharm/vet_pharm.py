@@ -34,16 +34,18 @@ class VetoPharmHomePage(Page):
         "registration email": "id=id_registration-email",
         "registration password": "id=id_registration-password1",
         "confirm password": "id=id_registration-password2",
-        "login submit": "xpath=(//button[@class='btn btn-md btn-primary'])",
-        "registration submit": "xpath=(//button[@class='btn btn-lg btn-primary'])",
+        "login submit": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' log-in-tbutton')])",
+        "registration submit": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), 'register-tbutton')])",
         "back to site": "xpath=(//i[@class='icon-home'])",
         "log out": "id=logout_link",
         "all products": "xpath=(//a[contains(text(),'All products')])",
         "list of products": "xpath=(//div[@class='row product-list'])",
-        "add to basket": "xpath=(//li[@class='my-basket']/a)",
-        "delete from basket": "xpath=(//div[@class='remove_butt col-md-1']//i[@class='fa fa-times'])",
-        "list of wishlists": "xpath=(//li[@class='my-wishlist'])",
-        "wishlist view": "xpath=(//a[@class='btn btn-default'][contains(text(),'View')])",
+        "add to basket": "xpath=(//li[contains(concat(' ', normalize-space(@class), ' '), ' my-basket-tbutton')])",
+        "continue shopping after adding": "xpath=(//*[@id='add-to-basket-modal']/div/div/div[4]/a[1]/i)",
+        "add product with instructions": "xpath=(//button[@class='btn btn-primary js-btn-add-to-basket button_site_style'])",
+        "delete from basket": "xpath=(//i[contains(concat(' ', normalize-space(@class), ' '), ' remove-from-basket-tbutton')])",
+        "list of wishlists": "xpath=(//li[contains(concat(' ', normalize-space(@class), ' '), ' my-wishlist-tbutton')])",
+        "wishlist view": "xpath=(//a[contains(concat(' ', normalize-space(@class), ' '), ' view-wish-list-tbutton')])",
         "product quantity": "id=id_lines-0-quantity",
         "update quantity": "id=update-wish-quantities",
         "wishlist settings": "xpath=(//i[@class='fa fa-chevron-down'])",
@@ -51,9 +53,9 @@ class VetoPharmHomePage(Page):
         "remove from wishlist": "xpath=(//button[@class='btn btn-lg btn-danger'])",
         "create new wishlist": "xpath=(//div[@class='wish_butt'])",
         "wishlist name": "id=id_name",
-        "save wishlist": "xpath=(//button[@class='btn btn-lg btn-primary'])",
-        "wishlists": "xpath=(//table[@class='table table-bordered'])",
-        "delete wishlist": "xpath=(//button[@class='btn btn-danger btn-lg'])",
+        "save wishlist": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' save-wishlist-tbutton')])",
+        "wishlists": "xpath=(//table[@class='table table-bordered '])",
+        "delete wishlist": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' confirm-remove-from-wishlist-tbutton')])",
         "health center": "xpath=(//div[@class='health_centre health-centre-nav-menu'])",
         "animals": "xpath=(//a[@href='/en-gb/health_centre/animals/'])",
         "add animal": "xpath=(//a[@href='/en-gb/health_centre/animal/create'])",
@@ -93,10 +95,10 @@ class VetoPharmHomePage(Page):
         "selected currency": "xpath=(//div[@class='product_price']//i[@class='curr_logo'])",
         "user account": "xpath=(//div[@class='user-account'])",
         "my profile": "xpath=(//a[contains(text(),'My profile')])",
-        "edit profile": "xpath=(//a[@class='btn link_site_style border_site_style edit_prof_btn'])",
+        "edit profile": "xpath=(//a[@class='btn button_color_border edit_prof_btn'])",
         "delete profile": "id=delete_profile",
         "account pasword": "id=id_password",
-        "delete account": "xpath=(//button[@class='btn btn-lg btn-danger'][contains(text(),'Delete')])",
+        "delete account": "xpath=(//button[@class='btn button_prime'])",
         "shipping country": "xpath=(//li[@id='shipping-widget']//a[contains(@class, 'trigger')])",
         "tax dropdown":  "xpath=(//ul[@class='tax_dropdown'])",
         "view prices": "xpath=(//span[contains(text(),'View prices')])",
@@ -118,17 +120,18 @@ class VetoPharmHomePage(Page):
         "prescription search button": "xpath=(//button[@class='btn search_button border_site_style'])",
         "found prescriptions list": "xpath=(//div[@class='list_prescription'])",
         "clear button": "id=reset-btn",
-        "proceed to checkout button": "xpath=(//a[@class='btn btn-lg btn-primary'][contains(text(), 'Proceed to checkout')])",
+        "proceed to checkout button": "xpath=(//a[contains(concat(' ', normalize-space(@class), ' '), ' procced-to-checkout-tbutton')])",
         "checkout guest": 'id=id_options_2',
         "continue checkout button": "xpath=(//button[@class='btn btn-lg btn-block btn-primary'][contains(text(),'Continue')])",
         "user email for checkout": "id=id_username",
-        "new checkout address": "xpath=(//button[@class='btn new_addr'])",
+        "new checkout address": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' add-new-address-tbutton')])",
         "address autocomplete for checkout": "id=id_autocomplete",
         "checkout with account": "id=id_options_0",
         "checkout company": "xpath=(//label[@for='company_2'][contains(text(), 'Quintagroup')])",
-        "proceed company checkout": "xpath=(//button[@class='btn btn-primary'][contains(text(), 'Proceed')])",
+        "proceed company checkout": "xpath=(//button[@class='btn button_prime'])",
         "added checkout addresses": "xpath=(//div[@class='choose-block'])",
-        "checkout address": "xpath=(//button[@class='btn btn-primary btn-large ship-address'])",
+        "checkout address": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' ship-to-this-address-tbutton')])",
+        "billing address": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' select-billing-address-tbutton')])",
         "business parcel delivery": "xpath=(.//*[@id='3']/div[1]/div/div[4]/form/button)",
         "select paypal": "xpath=(//*[@id='default']/div[1]/div/div[3]/div[1]/div[1]/div[5]/div[2]/form/button)",
         "paypal login frame": "xpath=(//iframe[@name='injectedUl'])",
@@ -137,18 +140,19 @@ class VetoPharmHomePage(Page):
         "paypal login btn": "xpath=(//*[@id='btnLogin'])",
         "paypal continue btn": "id=button",
         "place order": "id=place-order",
-        "continue shopping": "xpath=(//a[@class='btn btn-primary btn-block btn-lg'][contains(text(), 'Continue shopping')])",
+        "continue shopping": "xpath=(//a[contains(concat(' ', normalize-space(@class), ' '), ' countinue-shopping-tbutton')])",
         "berlin": "xpath=(//div[@class='pac-item']/span[contains(text(), 'Europaplatz, Berlin, Germany')])",
-        "continue checkout": "xpath=(//button[@class='btn btn-lg btn-primary'])",
+        "continue checkout": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' address-continue-tbutton')])",
         "select paybox": "xpath=(//*[@id='default']/div[1]/div/div[3]/div[1]/div[1]/div[3]/div[2]/form/button)",
         "paybox cardnumber": "xpath=(//*[@id='id_number'])",
         "paybox ccv number": "xpath=(//*[@id='id_ccv'])",
-        "continue paybox payment": "xpath=(//button[@class='btn btn-large btn-primary'])",
-        "view order status": "xpath=(//a[@class='btn btn-primary'][contains(text(), 'View order status')])",
-        "checkout with new a account": 'id=id_options_1',
-        "my basket": "xpath=(//li[@class='my-basket'])",
+        "continue paybox payment": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' continue-payment-tbutton')])",
+        "view order status": "xpath=(//a[contains(concat(' ', normalize-space(@class), ' '), ' view-order-status-tbutton')])",
+        "checkout with a new account": 'id=id_options_1',
+        "my basket": "xpath=(//li[contains(concat(' ', normalize-space(@class), ' '), ' my-basket-tbutton')])",
         "paris": "xpath=(//div[@class='pac-item']/span[contains(text(), 'France')])",
         "pick up at the pharmacy": "xpath=(//*[@id='default']/div[1]/div/div[3]/div[1]/div[1]/div[2]/div/div/div[3]/form/button)",
+        "Livraison domicile (Suisse)": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' select-method-tbutton')])",
         "select bank transfer": "xpath=(//*[@id='default']/div[1]/div/div[3]/div[1]/div[1]/div[2]/div[2]/form/button)",
         "received email letters": "xpath=(//*[@id='message-htmlpart1']/div/p[2]/a)",
         "paypal email login": "xpath=(//form[@name='login']//input[@id='email'])",
@@ -164,7 +168,7 @@ class VetoPharmHomePage(Page):
         "during pickup payment": "xpath=(//*[@id='default']/div[1]/div/div[3]/div[1]/div[1]/div[4]/div[2]/form/button)",
         "write a review button": "xpath=(//*[@id='column-wrapper']/div/div[2]/section[1]/div/div/div[3]/div/div[1]/p[2]/small/a[2])",
         "all reviews before": "xpath=(//*[@id='column-wrapper']/div/div[2]/section[1]/div/div/div[3]/div/div[1]/p[2]/small/a[1])",
-        "submit a review button": "xpath=(//button[@class='btn btn-primary btn-lg'])",
+        "submit a review button": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' submit-review-tbutton')])",
         "all reviews after": "xpath=(//*[@id='column-wrapper']/div/div[2]/section[1]/div/div/div[3]/div/div[1]/p[2]/small/a)",
         "filter reviews": "xpath=(//button[@class='btn btn-primary top-spacer'])",
         "rating stars box editing": "xpath=(//*[@id='edit_review_form']/div[1]/div/div[1])",
@@ -323,6 +327,7 @@ class VetoPharmHomePage(Page):
         self.select_frame("id=messagecontframe")
         self.focus("received email letters")
         self.click_element("received email letters")
+        sleep(3)
         self.close_prev_window_tab()
         return self
 
@@ -513,10 +518,14 @@ class VetoPharmHomePage(Page):
         add_to_basket=product.find_elements_by_tag_name("button")[-1]
         self.click_element(add_to_basket)
         sleep(2)
-        self._current_browser().back()
+        self.click_element("xpath=(//a[@class='btn btn-primary button_site_style'])")
+        sleep(5)
+        self.find_element("add to basket")
+        self.mouse_over("add to basket")
         self.click_element("add to basket")
         self.body_should_contain_text(pr_name, 'Selected product was not added to basket')
         return self
+
 
     @robot_alias("Add__product__to__basket__from__preview")
     def add_to_basket_from_preview(self, quantity=None):
@@ -527,7 +536,9 @@ class VetoPharmHomePage(Page):
         self.click_element("xpath=(//*[@id='add_to_basket_form_main']/button)")
         sleep(1)
         self.click_element("add to basket from preview")
-        self._current_browser().back()
+        sleep(5)
+        self.find_element("add to basket")
+        self.mouse_over("add to basket")
         self.click_element("add to basket")
         self.body_should_contain_text(pr_name, 'Selected product was not added to basket')
         return self
@@ -541,6 +552,7 @@ class VetoPharmHomePage(Page):
         self.mouse_over(choose_prod)
         add_to_basket = choose_prod.find_elements_by_tag_name("button")[-1]
         self.mouse_over(add_to_basket)
+        self.wait_until_element_is_visible(add_to_basket)
         self.click_element(add_to_basket)
         self.wait_until_element_is_visible("xpath=(//*[@id='add-to-basket-modal']/div/div/div[4]/a[1])")
         self.click_element("xpath=(//*[@id='add-to-basket-modal']/div/div/div[4]/a[1])")
@@ -813,16 +825,15 @@ class VetoPharmHomePage(Page):
         print pr_name
         self.mouse_over(prod)
         link = prod.find_element_by_class_name('product_link')
+        self.wait_until_element_is_enabled(link)
         self.click_element(link)
         sleep(1)
         name = self.find_element("xpath=(//div[@class='descktop-product-header']/h1)")
         pr_name = self.get_text(name)
         redirect = self.find_element("xpath=(//i[@class='fa fa-external-link'])")
-        print redirect
         self.mouse_over(redirect)
         self.wait_until_element_is_visible(redirect, 25)
         self.click_element(redirect)
-        print 777
         sleep(7)
         self.close_prev_window_tab()
         self.wait_until_element_is_enabled("xpath=(//div[@class='wishlist_butt'])")
@@ -842,11 +853,12 @@ class VetoPharmHomePage(Page):
             self.type_in_box(sensitive_settings.email,"user email for checkout")
             self.type_in_box(sensitive_settings.password,"account pasword")
         else:
-            self.type_in_box(email,"user email for checkout")
+            self.type_in_box(sensitive_settings.register_email,"user email for checkout")
         self.click_element("continue checkout button")
         return self
 
     def add_checkout_address(self, names=None, city=None):
+        self.mouse_over("new checkout address")
         self.click_element("new checkout address")
         self.type_in_box(city,"address autocomplete for checkout")
         sleep(2)
@@ -860,12 +872,15 @@ class VetoPharmHomePage(Page):
             self.click_element("les gets")
             self.type_in_box('Rue du Ctre',"id=id_line1")
         else:
+            self.wait_until_element_is_visible("paris")
             self.click_element("paris")
             self.type_in_box('Avenue Anatole',"id=id_line1")
             self.type_in_box('75007',"id=id_postcode")
         if names == True:
             self.type_in_box(self.gen_name(6),"id=id_first_name")
             self.type_in_box(self.gen_name(10),"id=id_last_name")
+        sleep(1)
+        self.mouse_over("continue checkout")
         self.click_element("continue checkout")
         return self
 
@@ -890,8 +905,7 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Checkout_as_guest_with_payment_during_pickup")
     def checkout_as_guest_pickup_payment(self):
-        guest_email= self.email_generator()
-        self.choose_checkout_user("checkout guest", email=guest_email)
+        self.choose_checkout_user("checkout guest")
         self.add_checkout_address(names=True, city='les gets')
         self.add_checkout_address(city='les gets')
         self.click_element("flex delivery service")
@@ -903,10 +917,9 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Proceed_to_checkout_and_create_account")
     def checkout_and_create_account(self):
-        new_email = sensitive_settings.register_email
-        self.choose_checkout_user("checkout with new a account", new_email)
+        self.choose_checkout_user("checkout with a new account")
         self.current_frame_contains('Create your account and then you will be redirected back to the checkout process')
-        self.register_account(new_email)
+        self.register_account(sensitive_settings.register_email)
         self.click_element("my basket")
         self.click_element("proceed to checkout button")
         self.add_checkout_address(names=True, city='paris')
@@ -925,7 +938,7 @@ class VetoPharmHomePage(Page):
         self.click_element("checkout company")
         self.click_element("proceed company checkout")
         self.click_element("checkout address")
-        self.click_element("checkout address")
+        self.click_element("billing address")
         self.click_element("business parcel delivery")
         self.click_element_at_coordinates("select paypal", 1284, 913)
         self.click_element("select paypal")
@@ -941,9 +954,8 @@ class VetoPharmHomePage(Page):
         self.click_element("paypal login btn")
         self.unselect_frame()
         sleep(10)
-        while not self._is_visible("paypal continue btn"):
-            self.wait_until_element_is_not_visible(("xpath=(//*[@id='spinner'])"), 25)
-            self.wait_until_element_is_enabled("paypal continue btn", 25)
+        self.wait_until_element_is_not_visible(("xpath=(//*[@id='spinner'])"), 150)
+        self.wait_until_element_is_enabled("paypal continue btn", 25)
         self.find_element("paypal continue btn")
         self.click_element("paypal continue btn")
         self.wait_until_element_is_visible("place order", 30)
@@ -956,11 +968,10 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Proceed_to_checkout_exluding_vat")
     def checkout_exluding_vat(self):
-        guest_email= self.email_generator()
-        self.choose_checkout_user("checkout guest", email=guest_email)
+        self.choose_checkout_user("checkout guest")
         self.add_checkout_address(names=True, city='geneva')
         self.add_checkout_address(city='geneva')
-        self.click_element("pick up at the pharmacy")
+        self.click_element("Livraison domicile (Suisse)")
         self.click_element("bank cheque")
         sleep(3)
         self.body_should_contain_text('YOUR ORDER IS EXEMPT FROM FRENCH VAT (VAT = 0%).', "Total price does not exclude VAT")
@@ -979,7 +990,7 @@ class VetoPharmHomePage(Page):
             price_exl_vat = price_exl_vat.replace(',','')
         price_exl_vat = float(price_exl_vat[1:])
         print price_exl_vat
-        asserts.assert_equal(total_purchase, price_exl_vat, "Total price does not exclude VAT")
+        asserts.assert_equal(round(total_purchase, 2), price_exl_vat, "Total price does not exclude VAT")
         self.find_element("total product price incl vat")
         price_inc_vat = self.get_text("total product price incl vat")
         if len(price_inc_vat) >= 8 and price_inc_vat[-7] == ',':
