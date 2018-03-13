@@ -514,11 +514,15 @@ class VetoPharmHomePage(Page):
     def add_to_basket_from_listing(self):
         product = self.select_product()
         pr_name = self.product_name(product)
+        print pr_name
         self.mouse_over(product)
-        add_to_basket=product.find_elements_by_tag_name("button")[-1]
+        add_to_basket=product.find_element_by_xpath(".//div[@class='product-control-button']")
+        sleep(3)
+        self.mouse_over(add_to_basket)
+        sleep(2)
         self.click_element(add_to_basket)
         sleep(2)
-        self.click_element("xpath=(//a[@class='btn btn-primary button_site_style'])")
+        self.check_veterinary_drug_label()
         sleep(5)
         self.find_element("add to basket")
         self.mouse_over("add to basket")
@@ -534,11 +538,11 @@ class VetoPharmHomePage(Page):
             quantity_box = self.find_elements("xpath=(//input[@id='id_quantity'])")
             self.input_text(quantity_box[0], quantity)
         self.click_element("xpath=(//*[@id='add_to_basket_form_main']/button)")
-        sleep(1)
-        self.click_element("add to basket from preview")
+        sleep(4)
+        self.check_veterinary_drug_label()
         sleep(5)
         self.find_element("add to basket")
-        self.mouse_over("add to basket")
+        self.focus("add to basket")
         self.click_element("add to basket")
         self.body_should_contain_text(pr_name, 'Selected product was not added to basket')
         return self
@@ -552,13 +556,27 @@ class VetoPharmHomePage(Page):
         self.mouse_over(choose_prod)
         add_to_basket = choose_prod.find_elements_by_tag_name("button")[-1]
         self.mouse_over(add_to_basket)
-        self.wait_until_element_is_visible(add_to_basket)
+        self.wait_until_element_is_visible(add_to_basket, 20)
         self.click_element(add_to_basket)
-        self.wait_until_element_is_visible("xpath=(//*[@id='add-to-basket-modal']/div/div/div[4]/a[1])")
-        self.click_element("xpath=(//*[@id='add-to-basket-modal']/div/div/div[4]/a[1])")
-        sleep(2)
+        sleep(4)
+        self.check_veterinary_drug_label()
+        sleep(3)
         self._current_browser().back()
         self.click_element("my basket")
+        return self
+
+    def check_veterinary_drug_label(self):
+        checkbox = self.find_elements("id=id_read_instructions", False)
+        if len(checkbox) != 0 and checkbox[-1].is_displayed() != False:
+                self.mouse_over(checkbox[-1])
+                sleep(1)
+                self.select_checkbox(checkbox[-1])
+                sleep(1)
+                self.click_element("add product with instructions")
+        else:
+            self.mouse_over("continue shopping after adding")
+            sleep(2)
+            self.click_element("continue shopping after adding")
         return self
 
     def product_preview_page(self, search_filters=None):
@@ -567,7 +585,7 @@ class VetoPharmHomePage(Page):
         self.mouse_over(product)
         link = product.find_element_by_class_name('product_link')
         self.wait_until_element_is_enabled(link, 25)
-        self.focus(link)
+        self.mouse_over(link)
         self.click_element(link)
         sleep(2)
         return pr_name
