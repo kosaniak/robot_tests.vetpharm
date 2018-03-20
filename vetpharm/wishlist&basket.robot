@@ -63,8 +63,37 @@ Add product to basket from recently viewed products and remove it
 Delete account
     Delete profile  ${account_password}
 
-Test if login works for correct credentials
-    Login into user account
+Add a drug request with one product as unlogged user
+    Add drug request as guest user
+
+Add comments to drug request and set "Rejected" status
+    Add comments to drug request and check rejected status
+
+Write comments to drug request and product and set its quantity limitation
+    Write comments and set quantity limitation
+
+Proceed to checkout as guest
+    Proceed to checkout with paybox payment
+
+Delete drug request after one-product purchase
+    Delete drug request at dashboard
+    Return To Site
+
+Add a drug request with many products as logged in user
+    ${list_of_chosen_prods}=  Add a drug request as logged in user
+    Set Suite Variable  ${list_of_chosen_prods}
+
+Remove product and change quantity in drug request
+    Edit created drug request  ${list_of_chosen_prods}
+
+Set "Approved" status to the edited drug request
+    Set 'Approved' drug request status
+
+Proceed to checkout with shipping method limitation
+    Proceed to checkout with shipping method limitation
+
+Delete drug request after multiple-product purchase
+    Delete drug request at dashboard
     Return To Site
 
 Write a review to a product
@@ -83,10 +112,6 @@ Proceed to checkout as logged in user
     Add product to basket
     Proceed to checkout as logged in user
 
-Proceed to checkout as guest
-    Add product to basket
-    Proceed to checkout as guest
-
 Proceed to checkout as guest with payment during pickup
     Add product to basket from preview
     Checkout as guest with payment during pickup
@@ -98,7 +123,7 @@ Proceed to checkout and create account
 Proceed to checkout with excluding VAT payment
     Add product to basket from preview  2
     Add product to basket from preview  5
-    Proceed to checkout exluding vat
+    Proceed to checkout excluding vat
 
 Verify unreferenced product label in search results
     Verify unreferenced product label
