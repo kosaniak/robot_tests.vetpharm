@@ -1045,25 +1045,6 @@ class VetoPharmHomePage(Page):
         self.click_element("continue checkout")
         return self
 
-    @robot_alias("Proceed_to_checkout_as_guest")
-    def checkout_as_guest_paybox(self):
-        guest_email= self.email_generator()
-        self.choose_checkout_user("checkout guest", email=guest_email)
-        self.add_checkout_address(names=True, city='berlin')
-        self.add_checkout_address(city='berlin')
-        self.click_element("home delivery")
-        self.click_element("select paybox")
-        self.type_in_box('1111222233334444', "paybox cardnumber")
-        self.type_in_box('123', "paybox ccv number")
-        self.click_element("continue paybox payment")
-        self.test_checkout_preview()
-        self.click_element("place order")
-        self.click_element("view order status")
-        self.body_should_contain_text('Pending', 'The payment status is other than %s' % ('Pending'))
-        self._current_browser().back()
-        self.click_element("continue shopping")
-        return self
-
     @robot_alias("Checkout_as_guest_with_payment_during_pickup")
     def checkout_as_guest_pickup_payment(self):
         self.choose_checkout_user("checkout guest")
@@ -1528,6 +1509,39 @@ class VetoPharmHomePage(Page):
         sleep(2)
         return self
 
+    @robot_alias("Proceed_to_checkout_with_shipping_method_limitation")
+    def checkout_pickup_at_pharmacy_only(self):
+        self.click_element("proceed to checkout button")
+        self.mouse_over("proceed in checkout")
+        self.click_element("proceed in checkout")
+        self.click_element("checkout company Quinta")
+        self.click_element("proceed company checkout")
+        self.choose_existing_address(".//button[contains(concat(' ', normalize-space(@class), ' '), ' ship-to-this-address-tbutton')]")
+        self.choose_existing_address(".//button[contains(concat(' ', normalize-space(@class), ' '), ' select-billing-address-tbutton')]")
+        asserts.assert_equal(len(self.find_elements("xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' select-method-tbutton')])")), 1,
+            "More than one shipping methods are available")
+        self.click_element("xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' select-method-tbutton')])")
+        self.click_element("during pickup payment")
+        self.test_checkout_preview()
+        self.click_element("place order")
+        sleep(2)
+        self.click_element("continue shopping")
+        sleep(3)
+        self.delete_prescription()
+        return self
+
+    def choose_existing_address(self, select_address_btn):
+        addresses = self.find_elements("xpath=(//dd[@class='well'])")
+        for i in addresses:
+            if len(i.find_elements_by_xpath(".//span[contains(text(), 'Lyon')]")) != 0:
+                add_address = i.find_element_by_xpath(select_address_btn)
+                self.mouse_over(add_address)
+                sleep(1)
+                self.click_element(add_address)
+                sleep(3)
+                break
+        return self
+
     def view_drug_request_from_website(self, list_pr):
         prescr = self.find_elements("xpath=(//div[@class='drug_request_list']//tbody//tr)")
         for i in prescr:
@@ -1537,6 +1551,30 @@ class VetoPharmHomePage(Page):
                 self.click_element(view)
                 sleep(4)
                 break
+        return self
+
+    @robot_alias("Proceed_to_checkout_with_paybox_payment")
+    def checkout_with_paybox_payment(self):
+        self.click_element("proceed to checkout button")
+        self.element_should_be_visible("xpath=(//div[@class='alert alert-warning text-center'])",
+            "Prescription should be required")
+        self.mouse_over("proceed in checkout")
+        self.click_element("proceed in checkout")
+        self.click_element("checkout company Quinta")
+        self.click_element("proceed company checkout")
+        self.add_checkout_address(city='berlin')
+        self.add_checkout_address(city='berlin')
+        self.click_element("home delivery items")
+        self.click_element("home delivery(Ger, Bel, Lux)")
+        self.click_element("select paybox")
+        self.type_in_box('1111222233334444', "paybox cardnumber")
+        self.type_in_box('123', "paybox ccv number")
+        self.click_element("continue paybox payment")
+        self.test_checkout_preview()
+        self.click_element("place order")
+        self.click_element("continue shopping")
+        sleep(2)
+        self.delete_prescription()
         return self
 
     def delete_prescription(self):
