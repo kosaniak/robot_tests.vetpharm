@@ -328,7 +328,7 @@ class VetoPharmHomePage(Page):
         self.type_in_box(password, "registration password")
         self.type_in_box(password, "confirm password")
         self.click_button("registration submit")
-        sleep(3)
+        sleep(5)
         if self._page_contains('To activate your account, please click the link sent to your mailbox'):
             self.activate_new_account(email, password)
             sleep(5)
@@ -436,6 +436,9 @@ class VetoPharmHomePage(Page):
         selected_tax= choice(tax_list)
         price_view= self.get_text(selected_tax).lower()
         self.click_element(selected_tax)
+        self.click_element("all products")
+        self.select_with_search_filters()
+        self.select_with_prescription_filter('no prescription')
         product= self.select_product()
         tax= product.find_element_by_tag_name("sup")
         asserts.assert_true(self.get_text(tax).lower() in price_view, 
@@ -444,7 +447,10 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Add__product__to__wishlist__from__listing")
     def add_to_wishlist_from_listing(self):
-        product = self.select_product()
+        self.click_element("all products")
+        self.select_with_search_filters()
+        self.select_with_prescription_filter('no prescription')
+        product= self.select_product()
         self.mouse_over(product)
         wishlist= product.find_element_by_tag_name('i')
         default_wishlist= product.find_elements_by_tag_name('label')
@@ -460,6 +466,9 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Add__product__to__wishlist__from__product__page")
     def add_to_wishlist_from_product_page(self):
+        self.click_element("all products")
+        self.select_with_search_filters()
+        self.select_with_prescription_filter('no prescription')
         pr_name = self.product_preview_page()
         print pr_name
         self.click_element("xpath=(//div[@class='wishlist_butt'])")
@@ -475,9 +484,11 @@ class VetoPharmHomePage(Page):
     def add_to_wishlist_from_recently_viewed(self):
         i = 0
         while i < 5:
+            self.click_element("all products")
+            self.select_with_search_filters()
+            self.select_with_prescription_filter('no prescription')
             self.product_preview_page()
             i += 1
-            print i
         recently_viewed = self.find_elements("xpath=(//article[@class='product_pod'])")
         choose_prod = choice(recently_viewed)
         self.focus(choose_prod)
@@ -540,7 +551,10 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Add__product__to__basket")
     def add_to_basket_from_listing(self):
-        product = self.select_product()
+        self.click_element("all products")
+        self.select_with_search_filters()
+        self.select_with_prescription_filter('no prescription')
+        product= self.select_product()
         pr_name = self.product_name(product)
         print pr_name
         self.mouse_over(product)
@@ -558,9 +572,11 @@ class VetoPharmHomePage(Page):
         self.body_should_contain_text(pr_name, 'Selected product was not added to basket')
         return self
 
-
     @robot_alias("Add__product__to__basket__from__preview")
     def add_to_basket_from_preview(self, quantity=None):
+        self.click_element("all products")
+        self.select_with_search_filters()
+        self.select_with_prescription_filter('no prescription')
         pr_name = self.product_preview_page()
         if quantity != None:
             quantity_box = self.find_elements("xpath=(//input[@id='id_quantity'])")
@@ -577,6 +593,9 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Add__product__to__basket__from__recently__viewed__products")
     def add_to_basket_from_recently_viewed(self, quantity=None):
+        self.click_element("all products")
+        self.select_with_search_filters()
+        self.select_with_prescription_filter('no prescription')
         self.product_preview_page()
         recently_viewed = self.find_elements("xpath=(//article[@class='product_pod'])")
         choose_prod = choice(recently_viewed)
@@ -600,38 +619,65 @@ class VetoPharmHomePage(Page):
                 sleep(1)
                 self.select_checkbox(checkbox[-1])
                 sleep(1)
-                self.click_element("add product with instructions")
+                add_to_basket = self.find_elements("add product with instructions")
+                self.click_element(add_to_basket[-1])
         else:
-            self.mouse_over("continue shopping after adding")
+            continue_shopping = self.find_elements("continue shopping after adding")
+            self.mouse_over(continue_shopping[-1])
             sleep(2)
-            self.click_element("continue shopping after adding")
+            self.click_element(continue_shopping[-1])
         return self
 
-    def product_preview_page(self, search_filters=None):
-        product = self.select_product(search_filters)
+    def product_preview_page(self, no_LHP_label=None):
+        product= self.select_product(no_LHP_label=no_LHP_label)
         pr_name = self.product_name(product)
         self.mouse_over(product)
-        link = product.find_element_by_class_name('product_link')
+        link = product.find_element_by_xpath(".//a[@class='product_link']/div")
         self.wait_until_element_is_enabled(link, 25)
         self.mouse_over(link)
+        sleep(4)
         self.click_element(link)
         sleep(2)
         return pr_name
 
-    def select_product(self, search_filters=None):
-        self.click_element("all products")
-        if search_filters != False:
-            self.wait_until_element_is_visible("search filters")
-            self.click_element("search filters")
-            self.click_element("availability filter")
-            self.click_element("availiable product")
-            self.click_element("search filters")
-            self.click_element(("prescription filter"))
-            self.click_element("no prescription")
+    def select_product(self, no_LHP_label=None):
         products_list= self.find_element("list of products")
-        products= products_list.find_elements_by_tag_name("article")
-        product= choice(products)
+        products = products_list.find_elements_by_tag_name("article")
+        if no_LHP_label:
+            products_without_LHP = [prod for prod in products if prod.find_elements_by_xpath(".//span[@class='bilan-sanitaire LHP availability-label']") == []]
+            product = choice(products_without_LHP)
+            names = []
+            for i in products_without_LHP:
+                names.append(self.product_name(i))
+            print names
+        else:
+            product = choice(products)
         return product
+
+    def select_with_search_filters(self):
+        self.wait_until_element_is_visible("search filters")
+        self.click_element("search filters")
+        self.click_element("availability filter")
+        self.click_element("availiable product")
+        sleep(1)
+        return self
+
+    def select_with_prescription_filter(self, prescription_type):
+        self.click_element("search filters")
+        self.click_element("prescription filter")
+        sleep(2)
+        if prescription_type == 'no prescription':
+            self.click_element("no prescription")
+        elif prescription_type == 'on prescription':
+            self.click_element("on prescription")
+        return self
+
+    def select_with_LHP_filter(self):
+        self.click_element("search filters")
+        self.click_element("livestock health program filter")
+        self.click_element("LHP beef production")
+        sleep(1)
+        return self
 
     def product_name(self, product_locator):
         pr_name= product_locator.find_element_by_tag_name('h3')
@@ -646,9 +692,13 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Write_a_review_and_evaluate_product")
     def write_product_review(self):
-        pr_name = self.product_preview_page(False)
+        self.click_element("all products")
+        self.select_with_search_filters()
+        pr_name = self.product_preview_page()
         while self._is_element_present("write a review button") != True:
-            pr_name = self.product_preview_page(False)
+            self.click_element("all products")
+            self.select_with_search_filters()
+            pr_name = self.product_preview_page()
         reviews = self.find_element("all reviews before")
         reviews_before = self.get_text(reviews)
         self.click_element("write a review button")
@@ -705,7 +755,10 @@ class VetoPharmHomePage(Page):
         return self
 
     def verify_successful_editing(self):
+        self.mouse_over("xpath=(//*[@id='product-reviews']/div/h2)")
+        sleep(1)
         self.click_element("xpath=(//*[@id='product-reviews']/div/h2)")
+        sleep(2)
         self.find_element('id=product-reviews')
         all_reviews = self.get_text('id=product-reviews')
         asserts.assert_true('Great!' in all_reviews, "The review has not been edited")
@@ -836,7 +889,6 @@ class VetoPharmHomePage(Page):
         self.type_in_box(month, "id=birth-month")
         self.type_in_box(year,"id=birth-year")
         return self
-
 
     def select_from_dropdown(self, menu_arrow, dropdown_variants, field):
         self.click_element(menu_arrow)
