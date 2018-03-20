@@ -840,32 +840,95 @@ class VetoPharmHomePage(Page):
         asserts.assert_false('ivanka' in body_txt, 'The animal was not deleted')
         return self
 
-
     @robot_alias("Add__the__prescription")
-    def add_prescription(self):
+    def add_prescription(self, product_name=None):
+        self.click_element("health center")
         self.click_element("my prescriptions")
         self.click_element("add prescription")
-        self.type_in_box('Best prescription', "prescription title")
-        self.fill_in_prescription_form("prescription date", "calendar", "td")
-        self.fill_in_prescription_form("add animals", "list of animals", "img", "select animal")
-        self.fill_in_prescription_form("add veterinarian", "list of vets", "i", "select veterinarian")
+        self.fill_in_prescription_form("prescription date", "calendar", ".//td[@class='day']")
+        self.fill_in_prescription_form("add animals", "list of animals", ".//div[@class='col-sm-3 col-xs-4 animal-block']", "select animal")
+        self.fill_in_prescription_form("add veterinarian", "list of vets", ".//li", "select veterinarian")
+        self.mouse_over("add products")
         self.click_element("add products")
-        self.type_in_box('food for mature dog', "search field")
-        self.fill_in_prescription_form("search products","products list", "i","select product")
+        search_pr = self.find_element("search field")
+        sleep(3)
+        if isinstance(product_name, list):
+            self.add_multiple_product_prescription(product_name)
+        else:
+            print product_name
+            self.input_text(search_pr, product_name.lower().split()[0])
+            self.fill_in_prescription_form("search products","products list", ".//*[@class='product']", "select product", product_name)
         self.click_element("save prescription")
+        sleep(2)
         self.body_should_contain_text('A scan or photo of your prescription is required', 
             'Prescription was created without attached photo')
+        self.click_element("xpath=(//*[@id='add-files-under']/i)")
+        sleep(1)
+        file_path = os.path.join(os.path.dirname(__file__), 'unicorn.jpg')
+        self.choose_file("xpath=(//*[@id='files-contaier']/div/input[@id='file-1'])", file_path)
+        sleep(2)
+        self.click_element("save prescription")
+        sleep(5)
         return self
 
+    def add_multiple_product_prescription(self, products_list):
+        i = 0
+        for item in products_list:
+            if i >= 1:
+                self.mouse_over("add products left")
+                sleep(2)
+                self.click_element("add products left")
+            print item
+            sleep(4)
+            self.wait_until_element_is_visible("search field")
+            self.input_text("search field", item.lower().split()[0])
+            self.fill_in_prescription_form("search products","products list", ".//*[@class='product']", "select product", item)
+            sleep(2)
+            i += 1
+        return self
 
-    def fill_in_prescription_form(self, add_btn, items, tag, close_btn=None):
+    def check_pages(self, add_btn, list_of_items, product_name):
+        for i in list_of_items:
+            self.mouse_over(i)
+            txt = self.get_text(i)
+            if txt.lower() == product_name.lower():
+                item = i.find_element_by_tag_name('i')
+                break
+        else:
+            next_page = self.find_elements("xpath=(//li[@class='next'])")
+            self.click_element(next_page[-1])
+            item = self.check_pages(add_btn, list_of_items, product_name)
+        return item
+
+    def fill_in_prescription_form(self, add_btn, items, param, close_btn=None, product_name=None):
+        self.wait_until_element_is_visible(add_btn)
         self.click_element(add_btn)
+        sleep(5)
+        if add_btn == "prescription date":
+            prev_month = self.find_elements("xpath=(//th[@class='prev'])")
+            self.click_element(prev_month[2])
+            sleep(1)
         info_block= self.find_elements(items)
-        list_of_items=info_block[0].find_elements_by_tag_name(tag)
-        item=choice(list_of_items)
+        list_of_items=info_block[0].find_elements_by_xpath(param)
+        if add_btn == "search products":
+            item = self.check_pages(add_btn, list_of_items, product_name)
+        elif add_btn == "add veterinarian":
+            elem = choice(list_of_items)
+            item = elem.find_element_by_xpath(".//a[@class='btn bgc_site_style pull-right add-vet-btn']")
+        elif add_btn == "prescription date":
+            possible_dates = list_of_items[0:21]
+            item = choice(possible_dates)
+        else:
+            item = choice(list_of_items)
+        self.mouse_over(item)
+        txt = self.get_text(item)
+        print txt
+        self.wait_until_element_is_visible(item)
         self.click_element(item)
+        sleep(2)
         if close_btn is not None:
             self.click_element(close_btn)
+            sleep(2)
             self.body_should_contain_text(self.get_text(item),
             'Required information was not added to prescription')
         sleep(3)
