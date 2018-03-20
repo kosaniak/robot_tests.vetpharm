@@ -8,6 +8,7 @@ from string import ascii_lowercase
 from itertools import islice
 import uuid
 import sensitive_settings
+import os
 from datetime import datetime
 
 
@@ -41,8 +42,8 @@ class VetoPharmHomePage(Page):
         "all products": "xpath=(//a[contains(text(),'All products')])",
         "list of products": "xpath=(//div[@class='row product-list'])",
         "add to basket": "xpath=(//li[contains(concat(' ', normalize-space(@class), ' '), ' my-basket-tbutton')])",
-        "continue shopping after adding": "xpath=(//*[@id='add-to-basket-modal']/div/div/div[4]/a[1]/i)",
-        "add product with instructions": "xpath=(//button[@class='btn btn-primary js-btn-add-to-basket button_site_style'])",
+        "continue shopping after adding": "xpath=(//a[contains(concat(' ', normalize-space(@class), ' '), ' continue-shopping-tbutton')])",
+        "add product with instructions": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' add-to-basket-tbutton')])",
         "delete from basket": "xpath=(//i[contains(concat(' ', normalize-space(@class), ' '), ' remove-from-basket-tbutton')])",
         "list of wishlists": "xpath=(//li[contains(concat(' ', normalize-space(@class), ' '), ' my-wishlist-tbutton')])",
         "wishlist view": "xpath=(//a[contains(concat(' ', normalize-space(@class), ' '), ' view-wish-list-tbutton')])",
@@ -70,7 +71,7 @@ class VetoPharmHomePage(Page):
         "questions list": "xpath=(//div[@class='helth-info col-sm-6'])",
         "all animals": "xpath=(//a[contains(text(),'My animals')])",
         "my prescriptions": "xpath=(//a[@href='/en-gb/health_centre/prescriptions/'])",
-        "add prescription": "xpath=(//a[@class='btn border_site_style link_site_style'][contains(text(), 'Add a new prescription')])",
+        "add prescription": "xpath=(//a[@class='btn add_new_button add-new-prescription-tbutton'])",
         "prescription title": "id=id_title",
         "save prescription": "id=ajax-save-prescription",
         "prescription date": "id=id_created_date",
@@ -82,7 +83,8 @@ class VetoPharmHomePage(Page):
         "list of vets": "xpath=(//div[@class='vet-search-results'])",
         "select veterinarian": "xpath=(//button[@class='btn btn-default link_site_style'][contains(text(),'Close')])",
         "add products": "id=add-products-under",
-        "search field": "xpath=(//*[@id='data-container']/form/div/div/input)",
+        "add products left": "id=add-products-left",
+        "search field": "xpath=(//*[@id='data-container']/form/div/div/div/input)",
         "search products": "id=ajax-search",
         "products list": "xpath=(//div[@class='products_list'])",
         "select product": "xpath=(//*[@id='add-products']/div/div/div[3]/button)",
@@ -128,6 +130,7 @@ class VetoPharmHomePage(Page):
         "address autocomplete for checkout": "id=id_autocomplete",
         "checkout with account": "id=id_options_0",
         "checkout company": "xpath=(//label[@for='company_2'][contains(text(), 'Quintagroup')])",
+        "checkout company Quinta": "xpath=(//label[@for='company_1'][contains(text(), 'Quinta')])",
         "proceed company checkout": "xpath=(//button[@class='btn button_prime'])",
         "added checkout addresses": "xpath=(//div[@class='choose-block'])",
         "checkout address": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' ship-to-this-address-tbutton')])",
@@ -163,6 +166,7 @@ class VetoPharmHomePage(Page):
         "dashboard": "xpath=(//a[contains(text(),'Dashboard')])",
         "dashboard content": "xpath=(//*[@id='default']/nav[2]/div/div[2]/ul/li[6]/a)",
         "dashboard reviews": "xpath=(//a[contains(text(),'Reviews')])",
+        "dashboard prescriptions": "xpath=(//a[contains(text(),'Prescriptions')])",
         "les gets": "xpath=(//div[@class='pac-item']/span[contains(text(), 'Presnoy, France')])",
         "flex delivery service": "xpath=(//*[@id='2']/div[2]/div/div[3]/form/button)",
         "during pickup payment": "xpath=(//*[@id='default']/div[1]/div/div[3]/div[1]/div[1]/div[4]/div[2]/form/button)",
@@ -189,7 +193,31 @@ class VetoPharmHomePage(Page):
         "LHP beef production": "xpath=(//span[@class='item-name'][contains(text(),'Beef production')])",
         "out of stock filter": "xpath=(//span[@class='item-name'][contains(text(),'Unavailable (out of stock)')])",
         "drug list filter": "xpath=(//button[@class='filter-button']/span[contains(text(),'Drug list')])",
-        "drug list not applicable": "xpath=(//span[@class='item-name'][contains(text(),'Not applicable')])"
+        "drug list not applicable": "xpath=(//span[@class='item-name'][contains(text(),'Not applicable')])",
+        "on prescription": "xpath=(//span[@class='item-name'][contains(text(),'Issuance on prescription')])",
+        "login for drug request": "xpath=(//a[@class='btn btn-primary btn-large'])",
+        "my drug requests": "xpath=(//li[contains(concat(' ', normalize-space(@class), ' '), ' my-drug-requests-tbutton')])",
+        "add prescr to drug request": "xpath=(//button[@class='btn btn-default button_site_style'][contains(text(), 'OK')])",
+        "dashboard health of animals": "xpath=(//*[@id='default']/nav[2]/div/div[2]/ul/li[12])",
+        "dashboard drug requests": "xpath=(//a[contains(text(),'Drug Requests')])",
+        "edit prod drug request": "xpath=(//a[contains(concat(' ', normalize-space(@class), ' '), ' edit-product-line-tbutton')])",
+        "list of drug requests": "xpath=(//a[contains(concat(' ', normalize-space(@class), ' '), ' nav-my-drug-requests-tbutton')])",
+        "OK btn for prescr in request": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' ok-close-prescr-search-tbutton')])",
+        "edit drug request": "xpath=(//a[contains(concat(' ', normalize-space(@class), ' '), ' edit-request-tbutton')])",
+        "drug request link": "xpath=(//a[contains(concat(' ', normalize-space(@class), ' '), ' request-detail-tbutton')])",
+        "drug request comments": "xpath=(//a[contains(concat(' ', normalize-space(@class), ' '), ' pharmacist-comment-tbutton')])",
+        "select all prods in drug request": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' select-all-products-tbutton')])",
+        "my basket from request": "xpath=(//a[contains(concat(' ', normalize-space(@class), ' '), ' request-my-basket-tbutton')])",
+        "update quantity in basket": "xpath=(//a[contains(concat(' ', normalize-space(@class), ' '), ' update-quantity-tbutton')])",
+        "proceed in checkout": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' proceed-tbutton')])",
+        "home delivery items": "xpath=(//div[@class='shipp_item']//i)",
+        "home delivery(Ger, Bel, Lux)": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' select-method-tbutton')])",
+        "approve drug request": "xpath=(//div[contains(text(),'Approved')])",
+        "reject drug request": "xpath=(//div[contains(text(),'Rejected')])",
+        "delete prescription at dashboard": "xpath=(//a[@class='btn btn-danger'])",
+        "delete prescription": "xpath=(//button[@class='btn btn-danger'])",
+        "delete drug request": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' delete-request-tbutton')])",
+        "confirm delete drug request": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' confirm-delete-request-tbutton')])"
     }
 
     def gen_name(self, length):
