@@ -597,11 +597,11 @@ class VetoPharmHomePage(Page):
         self.select_with_search_filters()
         self.select_with_prescription_filter('no prescription')
         self.product_preview_page()
-        recently_viewed = self.find_elements("xpath=(//article[@class='product_pod'])")
+        recently_viewed = self.find_elements("xpath=(//div[@class='owl-item active'])")
         choose_prod = choice(recently_viewed)
         sleep(4)
         self.mouse_over(choose_prod)
-        add_to_basket = choose_prod.find_elements_by_tag_name("button")[-1]
+        add_to_basket = choose_prod.find_element_by_xpath(".//button[contains(concat(' ', normalize-space(@class), ' '), ' add-to-basket-tbutton')]")
         self.mouse_over(add_to_basket)
         self.wait_until_element_is_visible(add_to_basket, 20)
         self.click_element(add_to_basket)
@@ -1317,6 +1317,54 @@ class VetoPharmHomePage(Page):
         sleep(2)
         return self
 
+    def drug_request_editing_page(self):
+        self.mouse_over('user account')
+        self.click_element('user account')
+        self.click_element('dashboard')
+        self.click_element('dashboard health of animals')
+        self.click_element('dashboard drug requests')
+        sleep(1)
+        self.click_element("edit drug request")
+        return self
+
+    def go_to_drug_requests_from_dashboard(self):
+        self.back_to_website()
+        self.click_element("my drug requests")
+        sleep(1)
+        self.click_element("list of drug requests")
+        self.click_element("drug request link")
+        sleep(2)
+        return self
+
+    def set_drug_request_status(self, status):
+        self.mouse_over("id=select2-chosen-2")
+        self.click_element("id=select2-chosen-2")
+        self.click_element(status)
+        sleep(2)
+        self.click_element("id=save-button")
+        return self
+
+    def edit_drug_request_product(self, comment):
+        self.click_element("edit prod drug request")
+        self.wait_until_element_is_visible('id=id_quantity')
+        self.input_text('id=id_quantity', '25')
+        sleep(2)
+        self.input_text("id=id_pharmacist_comment", comment)
+        sleep(1)
+        self.click_element("id=create-button")
+        return self
+
+    def check_comments(self):
+        self.click_element("drug request comments")
+        all_comments = self.find_elements("xpath=(//div[@class='comment-text'])")
+        self.mouse_over(all_comments[0])
+        sleep(1)
+        asserts.assert_equal(self.get_text(all_comments[0]).strip(), "Only two products can be bought",
+            "The comment to drug request has been not added")
+        asserts.assert_equal(self.get_text(all_comments[1]).strip(), "The drug request can be approved",
+            "The comment to drug request product has been not added")
+        return self
+
     @robot_alias("Add_drug_request_as_guest_user")
     def add_drug_request_with_one_product(self):
         self.click_element("all products")
@@ -1347,6 +1395,48 @@ class VetoPharmHomePage(Page):
         body_txt = self.get_text("css=body").encode("utf-8").lower()
         asserts.assert_false('Associated prescription does not contain selected product.' in body_txt,
             'The prescription does not include necessary products')
+        sleep(2)
+        return self
+
+    @robot_alias("Add_comments_to_drug_request_and_check_rejected_status")
+    def add_comments_and_reject(self):
+        self.drug_request_editing_page()
+        sleep(3)
+        self.set_drug_request_status("reject drug request")
+        self.go_to_drug_requests_from_dashboard()
+        self.body_should_contain_text("Status: your drug request is rejected.",
+            "Drug request status has been not changed to 'Rejected'")
+        self.element_should_be_disabled("id=move-to-basket-button")
+        self.drug_request_editing_page()
+        self.edit_drug_request_product("Only two products can be bought")
+        self.select_frame("id=id_pharmacist_comment_ifr")
+        self.input_text("id=tinymce", "The drug request can be approved")
+        self.unselect_frame()
+        self.set_drug_request_status("approve drug request")
+        new_status = self.find_element("xpath=(//tbody//tr[1]//td[3])")
+        asserts.assert_equal(self.get_text(new_status), "Approved", "The drug request status has been not changed")
+        return self
+
+    @robot_alias("Write_comments_and_set_quantity_limitation")
+    def write_comments_and_set_quantity(self):
+        self.go_to_drug_requests_from_dashboard()
+        self.body_should_contain_text("Status: your drug request is approved, you can move products to basket.",
+            "The status has been not changed")
+        sleep(1)
+        self.check_comments()
+        self.click_element("select all prods in drug request")
+        sleep(1)
+        self.click_element("id=move-to-basket-button")
+        sleep(4)
+        self.element_should_be_visible("my basket from request", "Product has been not added to basket")
+        self.click_element("my basket from request")
+        self.input_text("id=id_form-0-quantity", '50')
+        self.click_element("update quantity in basket")
+        sleep(2)
+        self.element_should_be_visible("xpath=(//span[@class='error-block'])")
+        sleep(2)
+        self.input_text("id=id_form-0-quantity", '1')
+        self.click_element("update quantity in basket")
         sleep(2)
         return self
 
@@ -1382,3 +1472,80 @@ class VetoPharmHomePage(Page):
         self.view_drug_request_from_website(list_pr)
         return all_prods
 
+
+    @robot_alias("Edit_created_drug_request")
+    def edit_drug_request(self, all_prods):
+        self.click_element("edit drug request")
+        sleep(3)
+        el = self.find_elements("xpath=(//div[@class='drug-request-product'])")[0]
+        removed_el_name = self.get_text(el.find_element_by_xpath(".//div[@class='name']//a")).lower()
+        print removed_el_name
+        remove = el.find_element_by_xpath(".//div[@class='remove-product']")
+        self.click_element(remove)
+        sleep(2)
+        quantity = self.find_elements("xpath=(//input[@name='quantity'])")[0]
+        self.input_text(quantity, '4')
+        sleep(1)
+        self.click_element("id=create-button")
+        all_prods.remove(removed_el_name)
+        print all_prods
+        list_update = '\n'.join(all_prods)
+        self.view_drug_request_from_website(list_update)
+        edited_products = self.find_elements("xpath=(//div[@class='products'])")
+        asserts.assert_false(removed_el_name in self.get_text(edited_products[1]),
+            "The product %s was not deleted" % removed_el_name)
+        quantity = self.find_elements("xpath=(//strong[@class='td_sales'])")
+        asserts.assert_equal(self.get_text(quantity[0]), 'Quantity: 4', )
+        self.body_should_contain_text("Status: your drug request is waiting for pharmacist's approval.",
+            "Drug request status is not 'Wating for approval'")
+        self.element_should_be_disabled("id=move-to-basket-button")
+        return self
+
+    @robot_alias("Set_'Approved'_drug_request_status")
+    def set_drug_request_approved(self):
+        self.drug_request_editing_page()
+        sleep(3)
+        self.set_drug_request_status("approve drug request")
+        self.go_to_drug_requests_from_dashboard()
+        self.body_should_contain_text("Status: your drug request is approved, you can move products to basket.",
+            "The status has been not changed")
+        self.click_element("select all prods in drug request")
+        self.click_element("id=move-to-basket-button")
+        sleep(4)
+        self.element_should_be_visible("my basket from request", "Product has been not added to basket")
+        self.click_element("my basket from request")
+        return self
+
+    @robot_alias("Delete_drug_request_at_dashboard")
+    def delete_drug_request(self):
+        self.click_element('dashboard health of animals')
+        self.click_element('dashboard drug requests')
+        sleep(2)
+        self.click_element('delete drug request')
+        sleep(3)
+        delete_dr_request = self.find_elements('confirm delete drug request')
+        self.click_element(delete_dr_request[0])
+        sleep(2)
+        return self
+
+    def view_drug_request_from_website(self, list_pr):
+        prescr = self.find_elements("xpath=(//div[@class='drug_request_list']//tbody//tr)")
+        for i in prescr:
+            info = i.find_element_by_class_name("product_name")
+            if len(list(set(list_pr.lower()).symmetric_difference(set(self.get_text(info).lower())))) == 0:
+                view = i.find_element_by_class_name('drug_request_link')
+                self.click_element(view)
+                sleep(4)
+                break
+        return self
+
+    def delete_prescription(self):
+        self.click_element('user account')
+        self.click_element('dashboard')
+        self.click_element('dashboard health of animals')
+        self.click_element("dashboard prescriptions")
+        self.click_element("delete prescription at dashboard")
+        sleep(2)
+        self.click_element("delete prescription")
+        sleep(2)
+        return self
