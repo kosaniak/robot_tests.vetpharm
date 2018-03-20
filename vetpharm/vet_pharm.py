@@ -1253,3 +1253,132 @@ class VetoPharmHomePage(Page):
         labels = self.find_elements(label_locator)
         asserts.assert_equal(len(labels), len(search_results), "Label %s is not found in some elements" % subfilter_name)
         return self
+
+    def add_to_drug_request_unlogged(self, product):
+        self.mouse_over(product)
+        talk_to_pharmacist_btn = product.find_element_by_class_name('request_for_unlogged_users')
+        self.mouse_over(talk_to_pharmacist_btn)
+        self.click_element(talk_to_pharmacist_btn)
+        self.wait_until_element_is_visible("login for drug request")
+        self.click_element("login for drug request")
+        return self
+
+    def add_to_drug_request_from_product_page(self):
+        self.click_element("all products")
+        self.select_with_search_filters()
+        self.select_with_prescription_filter('on prescription')
+        self.select_with_LHP_filter()
+        prod_name = self.product_preview_page()
+        self.wait_until_element_is_visible("xpath=(//*[@id='add_to_drug_request_form_main']/button)")
+        self.click_element("xpath=(//*[@id='add_to_drug_request_form_main']/button)")
+        self.wait_until_element_is_visible("id=add-to-drug-reques-modal", 25)
+        sleep(2)
+        self.click_element("id=id_read_instructions")
+        self.click_element("xpath=(//button[@value='Add to drug request'])")
+        sleep(3)
+        return prod_name
+
+    def add_to_drug_request_from_listing(self):
+        self.click_element("all products")
+        self.select_with_search_filters()
+        self.select_with_prescription_filter('on prescription')
+        product= self.select_product(True)
+        pr_name = self.product_name(product)
+        print pr_name
+        drug_req = product.find_element_by_xpath(".//*[@id='add_to_basket_form_main']/button")
+        self.mouse_over(drug_req)
+        sleep(1)
+        self.click_element(drug_req)
+        self.wait_until_element_is_visible("id=add-to-drug-reques-modal", 30)
+        sleep(2)
+        self.click_element("id=id_read_instructions")
+        self.click_element("xpath=(//*[@id='add-to-drug-reques-modal']/div/div/div[3]/form/button)")
+        sleep(3)
+        self.body_should_contain_text(pr_name, 'Selected product was not added to wishlist')
+        return pr_name
+
+    def add_prescr_to_drug_request(self, prod_name):
+        self.click_element("xpath=(//span[contains(text(),'Add prescription')])")
+        prescr_list = self.find_elements("xpath=(//div[@class='prescr_block border_block'])")
+        for i in prescr_list:
+            self.mouse_over(i)
+            sleep(2)
+            info = i.find_element_by_class_name('products')
+            txt = self.get_text(info)
+            if len(list(set(prod_name.lower()).symmetric_difference(set(txt.lower())))) == 0:
+                checkbox = i.find_element_by_class_name('checkbox')
+                sleep(1)
+                self.click_element(checkbox)
+                break
+        sleep(3)
+        self.mouse_over("OK btn for prescr in request")
+        sleep(2)
+        self.click_element("OK btn for prescr in request")
+        sleep(2)
+        return self
+
+    @robot_alias("Add_drug_request_as_guest_user")
+    def add_drug_request_with_one_product(self):
+        self.click_element("all products")
+        self.select_with_search_filters()
+        self.select_with_prescription_filter('on prescription')
+        product = self.select_product()
+        pr_name = self.product_name(product)
+        print pr_name
+        self.add_to_drug_request_unlogged(product)
+        self.successful_login()
+        self.back_to_website()
+        prod_name = self.add_to_drug_request_from_product_page()
+        self.add_prescription(prod_name)
+        self.wait_until_element_is_visible("my drug requests")
+        self.click_element("my drug requests")
+        sleep(1)
+        self.body_should_contain_text(prod_name, "Product was not added to drug request")
+        self.click_element("id=create-button")
+        sleep(3)
+        self.body_should_contain_text('You have chosen to use our website as means to provide a copy of your prescription. Please add this prescription.',
+            "Drug request was created without prescription")
+        self.add_prescr_to_drug_request(prod_name)
+        self.input_text("xpath=(//input[@name='quantity'])", '2')
+        sleep(2)
+        self.mouse_over("id=create-button")
+        self.click_element("id=create-button")
+        sleep(5)
+        body_txt = self.get_text("css=body").encode("utf-8").lower()
+        asserts.assert_false('Associated prescription does not contain selected product.' in body_txt,
+            'The prescription does not include necessary products')
+        sleep(2)
+        return self
+
+    @robot_alias("Add_a_drug_request_as_logged_in_user")
+    def add_drug_request_with_many_products(self):
+        all_prods = []
+        i = 0
+        while i < 2:
+            prod_name = self.add_to_drug_request_from_listing()
+            if len(all_prods) >= 2 and prod_name == all_prods[0]:
+                new_name = self.add_to_drug_request_from_listing()
+                print new_name
+                all_prods.append(new_name)
+            else:
+                all_prods.append(prod_name)
+            print all_prods
+            i += 1
+        self.add_prescription(all_prods)
+        sleep(2)
+        self.wait_until_element_is_visible("my drug requests")
+        self.click_element("my drug requests")
+        sleep(1)
+        self.click_element("id=create-button")
+        sleep(3)
+        self.body_should_contain_text('You have chosen to use our website as means to provide a copy of your prescription. Please add this prescription.',
+            "Drug request was created without prescription")
+        list_pr = '\n'.join(all_prods)
+        self.add_prescr_to_drug_request(list_pr)
+        sleep(4)
+        self.wait_until_element_is_visible("id=create-button")
+        self.click_element("id=create-button")
+        sleep(4)
+        self.view_drug_request_from_website(list_pr)
+        return all_prods
+
