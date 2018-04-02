@@ -1,8 +1,10 @@
 decorator
 mock==1.0.1
 requests==2.1.0
+robotframework
+robotframework-debuglibrary
 robotframework-pageobjects==1.3.3
 robotframework-selenium2library==1.7.2
-robotframework
+selenium
 uritemplate==0.6
 robotframework-pageobjects==1.3.3 
