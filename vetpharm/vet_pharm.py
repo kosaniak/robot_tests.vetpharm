@@ -331,7 +331,8 @@ class VetoPharmHomePage(Page):
         self.type_in_box(password, "registration password")
         self.type_in_box(password, "confirm password")
         self.click_button("registration submit")
-        sleep(5)
+        sleep(8)
+        self.capture_page_screenshot()
         if self._page_contains('To activate your account, please click the link sent to your mailbox'):
             self.activate_new_account(email, password)
             self.wait_until_element_is_visible("id=header-middle", 30)
