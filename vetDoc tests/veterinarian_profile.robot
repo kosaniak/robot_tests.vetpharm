@@ -26,5 +26,5 @@ Whether species/specialty are clickable with corresponding search results
 Whether veterinarians' names are clickable and lead to profiles
     Open Clinic Profile
 
-Whether correct phone number is displayed on the page and in application
-    Check Contact Number
+# Whether correct phone number is displayed on the page and in application
+#     Check Contact Number
