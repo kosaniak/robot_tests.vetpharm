@@ -465,8 +465,9 @@ class VetoPharmHomePage(Page):
         pr_name = self.product_name(product)
         print pr_name
         self.mouse_over_element_in_viewport(wishlist)
-        self.click_element(wishlist)
-        self.click_element(default_wishlist[0])
+        self.click_element_at_coordinates(wishlist, 0, 0)
+        sleep(2)
+        self.click_element_at_coordinates(default_wishlist[0], 0, 0)
         self.mouse_over_element_in_viewport("list of wishlists")
         self.click_element_at_coordinates("list of wishlists", 0, 0)
         self.click_element("wishlist view")
@@ -1024,26 +1025,21 @@ class VetoPharmHomePage(Page):
         self.mouse_over_element_in_viewport("new checkout address")
         self.click_element_at_coordinates("new checkout address", 0, 0)
         self.wait_until_element_is_visible("address autocomplete for checkout")
-        self.type_in_box(city,"address autocomplete for checkout")
-        sleep(1)
         self.click_element("address autocomplete for checkout")
-        if city == 'berlin':
-            self.wait_until_element_is_visible("berlin")
-            self.click_element_at_coordinates("berlin", 0, 0)
-        elif city == 'geneva':
-            self.wait_until_element_is_visible("geneva")
-            self.click_element_at_coordinates("geneva", 0, 0)
+        self.type_in_box(city,"address autocomplete for checkout")
+        sleep(3)
+        if not self._is_visible(city):
+            self.click_element("address autocomplete for checkout")
+        self.wait_until_element_is_visible(city)
+        self.click_element_at_coordinates(city, 0, 0)
+        if city == 'geneva':
             self.wait_until_element_is_visible("id=id_line1")
             self.type_in_box('Place Dorciere',"id=id_line1")
             self.type_in_box('1201',"id=id_postcode")
         elif city == 'les gets':
-            self.wait_until_element_is_visible("les gets")
-            self.click_element_at_coordinates("les gets", 0, 0)
             self.wait_until_element_is_visible("id=id_line1")
             self.type_in_box('Rue du Ctre',"id=id_line1")
-        else:
-            self.wait_until_element_is_visible("paris")
-            self.click_element_at_coordinates("paris", 0, 0)
+        elif city == 'paris':
             self.wait_until_element_is_visible("id=id_line1")
             self.type_in_box('Avenue Anatole',"id=id_line1")
             self.mouse_over_element_in_viewport("id=id_postcode")
@@ -1067,7 +1063,9 @@ class VetoPharmHomePage(Page):
         self.click_element("flex delivery service")
         self.click_element("during pickup payment")
         self.test_checkout_preview()
+        self.mouse_over_element_in_viewport("place order")
         self.click_element("place order")
+        self.wait_until_element_is_visible("continue shopping")
         self.click_element("continue shopping")
         return self
 
@@ -1086,7 +1084,9 @@ class VetoPharmHomePage(Page):
         self.click_element("pick up at the pharmacy")
         self.click_element("select bank transfer")
         self.test_checkout_preview()
+        self.mouse_over_element_in_viewport("place order")
         self.click_element("place order")
+        self.wait_until_element_is_visible("continue shopping")
         self.click_element("continue shopping")
         self.delete_account(sensitive_settings.register_password)
         return self
@@ -1101,22 +1101,18 @@ class VetoPharmHomePage(Page):
         self.click_element("business parcel delivery")
         self.mouse_over_element_in_viewport("select paypal")
         self.click_element("select paypal")
-        self.wait_until_element_is_visible('paypal login frame', 40)
-        self.select_frame('paypal login frame')
-        sleep(1)
+        sleep(30)
         username = self.get_webelements("paypal email login")[0]
         self.input_text(username, 'pharmacyshoptest-buyer@gmail.com')
         password = self.get_webelements("paypal password login")[0]
         self.input_text(password, 'X4ttLgRtAj61')
         sleep(2)
-        self.wait_until_element_is_enabled("paypal login btn")
         self.click_element("paypal login btn")
-        self.unselect_frame()
         sleep(10)
-        self.wait_until_element_is_not_visible(("xpath=(//*[@id='spinner'])"), 150)
         self.wait_until_element_is_enabled("paypal continue btn", 25)
         self.click_element("paypal continue btn")
-        self.wait_until_element_is_visible("place order", 30)
+        self.wait_until_element_is_visible("place order", 80)
+        self.mouse_over_element_in_viewport("place order")
         self.click_element("place order")
         self.wait_until_element_is_visible("xpath=(//h3[contains(text(), 'View my order')])")
         self.body_should_contain_text('Your order has been placed and a confirmation email has been sent - your order number is',
@@ -1158,7 +1154,9 @@ class VetoPharmHomePage(Page):
             price_inc_vat = price_inc_vat.replace(',','')
         price_inc_vat = float(price_inc_vat[1:])
         asserts.assert_not_equal(price_exl_vat, price_inc_vat, "Total price does not exclude VAT")
+        self.mouse_over_element_in_viewport("place order")
         self.click_element("place order")
+        self.wait_until_element_is_visible("continue shopping")
         self.click_element("continue shopping")
         return self
 
@@ -1284,6 +1282,7 @@ class VetoPharmHomePage(Page):
         self.select_with_prescription_filter('on prescription')
         product = self.select_product(True)
         pr_name = self.product_name(product)
+        self.mouse_over_element_in_viewport(product)
         print pr_name
         drug_req = product.find_element_by_xpath(".//*[@id='add_to_basket_form_main']/button")
         self.mouse_over_element_in_viewport(drug_req)
@@ -1298,6 +1297,7 @@ class VetoPharmHomePage(Page):
 
     def add_prescr_to_drug_request(self, prod_name):
         self.click_element("xpath=(//span[contains(text(),'Add prescription')])")
+        self.focus("xpath=(//div[@class='modal-dialog'])")
         prescr_list = self.find_elements("xpath=(//div[@class='prescr_block border_block'])")
         for i in prescr_list:
             self.mouse_over_element_in_viewport(i)
@@ -1538,6 +1538,7 @@ class VetoPharmHomePage(Page):
         self.click_element("xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' select-method-tbutton')])")
         self.click_element("during pickup payment")
         self.test_checkout_preview()
+        self.mouse_over_element_in_viewport("place order")
         self.click_element("place order")
         sleep(2)
         self.click_element("continue shopping")
@@ -1590,7 +1591,9 @@ class VetoPharmHomePage(Page):
         self.type_in_box('123', "paybox ccv number")
         self.click_element("continue paybox payment")
         self.test_checkout_preview()
+        self.mouse_over_element_in_viewport("place order")
         self.click_element("place order")
+        self.wait_until_element_is_visible("continue shopping")
         self.click_element("continue shopping")
         sleep(2)
         self.delete_prescription()
@@ -1614,6 +1617,7 @@ class VetoPharmHomePage(Page):
         else:
             element = locator
         self.driver.execute_script('return arguments[0].scrollIntoView();', element)
+        self.driver.execute_script("window.scrollBy(0, -150);")
         self.wait_until_element_is_visible(element)
         self.mouse_over(element)
         return self
