@@ -257,7 +257,7 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Try__to__login__with__incorrect__credentials")
     def unsuccessful_login(self):
-        self.login_into_acc(sensitive_settings.email_generator(), sensitive_settings.gen_password())
+        self.login_into_acc(self.email_generator(), self.gen_password())
         self.body_should_contain_text('Please enter a correct username and password. Note that both fields may be case-sensitive', 
             'No alert message about incorrect credentials')
         return self
@@ -293,7 +293,7 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Try__to__register__the __invalid__email")
     def invalid_email_registration(self):
-        self.register_account(self.email_generator()[:-5])
+        self.register_account(self.email_generator()[:-5], self.gen_password())
         self.body_should_contain_text('Enter a valid email address',
             'Successful registration for invalid email address')
         return self
@@ -311,14 +311,14 @@ class VetoPharmHomePage(Page):
         self.click_element("register")
         sleep(2)
         self.type_in_box(self.email_generator(), "registration email")
-        self.type_in_box(self.password, "registration password")
+        self.type_in_box(self.gen_password(), "registration password")
         self.type_in_box(self.gen_password(), "confirm password")
         self.click_button("registration submit")
         self.body_should_contain_text('The two password fields didn\'t match.',
             'No alert message about password confirmation fail')
         return self
 
-    def register_account(self, email=None):
+    def register_account(self, email=None, password=None):
         if email == None:
             email = self.email_generator()
             password = self.gen_password()
@@ -408,6 +408,7 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("select__currency")
     def change_currency(self):
+        self.select_with_search_filters()
         self.click_element("widgets-list")
         self.click_element("currency-widget")
         currency_widget = self.find_element("currency-widget")
@@ -418,6 +419,8 @@ class VetoPharmHomePage(Page):
         self.click_element("widgets-list")
         self.element_text_should_be("currency", selected_currency)
         currency_logo = self.get_text("currency logo")
+        prod_curr_list = self.find_elements("selected currency")
+        self.mouse_over_element_in_viewport(prod_curr_list[1])
         self.element_text_should_be("selected currency", currency_logo)
         return self
 
@@ -462,8 +465,8 @@ class VetoPharmHomePage(Page):
         pr_name = self.product_name(product)
         print pr_name
         self.mouse_over_element_in_viewport(wishlist)
-        self.click_element_at_coordinates(wishlist, 0, 0)
-        self.click_element_at_coordinates(default_wishlist[0], 0, 0)
+        self.click_element(wishlist)
+        self.click_element(default_wishlist[0])
         self.mouse_over_element_in_viewport("list of wishlists")
         self.click_element_at_coordinates("list of wishlists", 0, 0)
         self.click_element("wishlist view")
@@ -607,6 +610,7 @@ class VetoPharmHomePage(Page):
         print pr_name
         recently_viewed = self.find_elements("xpath=(//div[@class='owl-item active'])")
         choose_prod = choice(recently_viewed)
+        self.mouse_over_element_in_viewport(choose_prod)
         add_to_basket = choose_prod.find_element_by_xpath(".//button[contains(concat(' ', normalize-space(@class), ' '), ' add-to-basket-tbutton')]")
         self.mouse_over_element_in_viewport(add_to_basket)
         self.click_element_at_coordinates(add_to_basket, 0, 0)
