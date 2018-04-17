@@ -275,6 +275,21 @@ class VetoPharmHomePage(Page):
             'Login failed for user')
         return self
 
+    @robot_alias("Login__into__newly__created__account")
+    def successful_login_into_new_account(self):
+        self.login_into_acc(sensitive_settings.register_email, sensitive_settings.register_password)
+        sleep(3)
+        if self._is_text_present('Welcome back'):
+            created_account_status = True
+        elif self._is_text_present("This account is inactive.To activate your account, please click the link sent to your mailbox"):
+            self.activate_new_account(sensitive_settings.register_email, sensitive_settings.register_password)
+            self.wait_until_element_is_visible("user account", 25)
+            created_account_status = True
+        else:
+            created_account_status = False
+        print created_account_status
+        return created_account_status
+
     @robot_alias("Try__to__login__with__incorrect__credentials")
     def unsuccessful_login(self):
         self.login_into_acc(self.email_generator(), self.gen_password())
