@@ -26,8 +26,7 @@ Test if prices view can be selected
     Select Prices View
 
 Register a new account
-    ${account_password}=  register_account  ${register_email}
-    Set Suite Variable  ${account_password}
+    register_account  ${register_email}
 
 Add product to wishlist from listing and delete it
     Add product to wishlist from listing
@@ -61,5 +60,17 @@ Add product to basket from recently viewed products and remove it
     Add product to basket from recently viewed products
     Remove product from basket
 
+Log out from new account
+    Logout From Account
+
+Log into new account
+    [tags]  log_into_new_account
+    Open VetoPharm
+    Maximize Window
+    ${created_account_status}=  successful_login_into_new_account
+    Set Suite Variable  ${created_account_status}
+
 Delete account
-    Delete profile  ${account_password}
+    [tags]  delete_new_account
+    Pass Execution If  '${created_account_status}' == 'False'  'Account has been not created'
+    Delete profile  ${register_password}
