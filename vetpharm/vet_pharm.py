@@ -1,17 +1,20 @@
-from robotpageobjects import Page, robot_alias
+import os
+import sys
+import uuid
+from datetime import datetime
+from functools import wraps
+from random import choice, randint
+from string import ascii_lowercase
+from time import sleep
+from traceback import print_exc
+
 from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
 from robot.utils import asserts
-from time import sleep
-from random import randint, choice
-from string import ascii_lowercase
-from itertools import islice
-from datetime import datetime
-from selenium.webdriver import ActionChains
-from selenium import webdriver
-import uuid
+
+from robotpageobjects import Page, robot_alias
+
 import sensitive_settings
-import os
 
 
 class VetoPharmHomePage(Page):
@@ -221,6 +224,23 @@ class VetoPharmHomePage(Page):
         "delete drug request": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' delete-request-tbutton')])",
         "confirm delete drug request": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' confirm-delete-request-tbutton')])"
     }
+
+    def account_cleanup(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            self = args[0]
+            try:
+                return fn(*args, **kwargs)
+            except Exception as outer_e:
+                raise outer_e
+            finally:
+                try:
+                    self.delete_account(sensitive_settings.register_password)
+                except Exception:
+                    print(print_exc(sys.exc_info()))
+                    print('\nThe above exception occurred during handling the following exception:\n')
+                    raise outer_e
+        return wrapper
 
     def gen_name(self, length):
         """Generate a random name with the given number of characters."""
@@ -1069,7 +1089,9 @@ class VetoPharmHomePage(Page):
         self.click_element("continue shopping")
         return self
 
+
     @robot_alias("Proceed_to_checkout_and_create_account")
+    @account_cleanup
     def checkout_and_create_account(self):
         self.choose_checkout_user("checkout with a new account")
         self.current_frame_contains('Create your account and then you will be redirected back to the checkout process')
@@ -1088,8 +1110,8 @@ class VetoPharmHomePage(Page):
         self.click_element("place order")
         self.wait_until_element_is_visible("continue shopping")
         self.click_element("continue shopping")
-        self.delete_account(sensitive_settings.register_password)
         return self
+
 
     @robot_alias("Proceed_to_checkout_as_logged_in_user")
     def checkout_as_logged_in_user(self):
