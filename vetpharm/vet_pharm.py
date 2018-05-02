@@ -880,6 +880,7 @@ class VetoPharmHomePage(Page):
         self.click_element("health center")
         self.click_element("my prescriptions")
         self.click_element("add prescription")
+        self.wait_until_element_is_visible("prescription date", 25)
         self.fill_in_prescription_form("prescription date", "calendar", ".//td[@class='day']")
         self.fill_in_prescription_form("add animals", "list of animals", ".//div[@class='col-sm-3 col-xs-4 animal-block']", "select animal")
         self.fill_in_prescription_form("add veterinarian", "list of vets", ".//li", "select veterinarian")
@@ -939,11 +940,13 @@ class VetoPharmHomePage(Page):
 
     def fill_in_prescription_form(self, add_btn, items, param, close_btn=None, product_name=None):
         self.wait_until_element_is_visible(add_btn)
+        self.mouse_over(add_btn)
+        sleep(2)
         self.click_element(add_btn)
         sleep(5)
         if add_btn == "prescription date":
             prev_month = self.find_elements("xpath=(//th[@class='prev'])")
-            self.click_element(prev_month[2])
+            self.click_element_at_coordinates(prev_month[2], 0, 0)
             sleep(1)
         info_block = self.find_elements(items)
         list_of_items = info_block[0].find_elements_by_xpath(param)
@@ -1303,7 +1306,10 @@ class VetoPharmHomePage(Page):
         self.select_with_prescription_filter('on prescription')
         self.select_with_LHP_filter()
         prod_name = self.product_preview_page()
-        self.wait_until_element_is_visible("xpath=(//*[@id='add_to_drug_request_form_main']/button)")
+        self.wait_until_element_is_visible("xpath=(//a[contains(text(), 'Online request')])")
+        self.mouse_over_element_in_viewport("xpath=(//a[contains(text(), 'Online request')])")
+        self.click_element("xpath=(//a[contains(text(), 'Online request')])")
+        sleep(2)
         self.mouse_over_element_in_viewport("xpath=(//*[@id='add_to_drug_request_form_main']/button)")
         self.click_element("xpath=(//*[@id='add_to_drug_request_form_main']/button)")
         self.wait_until_element_is_visible("id=add-to-drug-reques-modal", 25)
@@ -1380,6 +1386,7 @@ class VetoPharmHomePage(Page):
         return self
 
     def edit_drug_request_product(self, comment):
+        self.mouse_over_element_in_viewport("edit prod drug request")
         self.click_element("edit prod drug request")
         self.wait_until_element_is_visible('id=id_quantity')
         self.input_text('id=id_quantity', '25')
@@ -1417,6 +1424,7 @@ class VetoPharmHomePage(Page):
         self.click_element("my drug requests")
         sleep(1)
         self.body_should_contain_text(prod_name, "Product was not added to drug request")
+        self.switch_sending_prescr()
         self.click_element("id=create-button")
         sleep(3)
         self.body_should_contain_text('You have chosen to use our website as means to provide a copy of your prescription. Please add this prescription.',
@@ -1425,8 +1433,12 @@ class VetoPharmHomePage(Page):
         self.input_text("xpath=(//input[@name='quantity'])", '2')
         sleep(2)
         self.mouse_over_element_in_viewport("id=create-button")
+        sleep(2)
         self.click_element_at_coordinates("id=create-button", 0, 0)
-        sleep(5)
+        self.wait_until_element_is_visible("xpath=(//div[@class='modal-body'])", 80)
+        self.wait_until_element_is_visible("xpath=(//button[@class='close-modal']/span)", 30)
+        self.click_element("xpath=(//button[@class='close-modal']/span)")
+        sleep(4)
         body_txt = self.get_text("css=body").encode("utf-8").lower()
         asserts.assert_false('Associated prescription does not contain selected product.' in body_txt,
             'The prescription does not include necessary products')
@@ -1459,15 +1471,16 @@ class VetoPharmHomePage(Page):
             "The status has been not changed")
         sleep(1)
         self.check_comments()
-        self.click_element("select all prods in drug request")
         sleep(1)
         self.click_element("id=move-to-basket-button")
         sleep(4)
-        self.element_should_be_visible("my basket from request", "Product has been not added to basket")
-        self.click_element("my basket from request")
+        self.wait_until_element_is_visible("xpath=(//a[@class='btn btn-primary button_site_style'])")
+        self.click_element("xpath=(//a[@class='btn btn-primary button_site_style'])")
+        self.wait_until_element_is_visible("id=id_form-0-quantity", 30)
         self.input_text("id=id_form-0-quantity", '50')
         self.click_element("update quantity in basket")
         sleep(2)
+        self.wait_until_element_is_visible("xpath=(//span[@class='error-block'])", 30)
         self.element_should_be_visible("xpath=(//span[@class='error-block'])")
         sleep(2)
         self.input_text("id=id_form-0-quantity", '1')
@@ -1492,6 +1505,7 @@ class VetoPharmHomePage(Page):
         self.wait_until_element_is_visible("my drug requests")
         self.click_element("my drug requests")
         sleep(1)
+        self.switch_sending_prescr()
         self.click_element("id=create-button")
         sleep(3)
         self.body_should_contain_text('You have chosen to use our website as means to provide a copy of your prescription. Please add this prescription.',
@@ -1500,11 +1514,25 @@ class VetoPharmHomePage(Page):
         self.add_prescr_to_drug_request(list_pr)
         sleep(4)
         self.wait_until_element_is_visible("id=create-button")
+        self.mouse_over_element_in_viewport("id=create-button")
+        sleep(2)
         self.click_element("id=create-button")
+        self.wait_until_element_is_visible("xpath=(//div[@class='modal-body'])", 60)
+        self.wait_until_element_is_visible("xpath=(//button[@class='close-modal']/span)", 30)
+        self.click_element("xpath=(//button[@class='close-modal']/span)")
+        sleep(4)
+        self.click_element("list of drug requests")
         sleep(4)
         self.view_drug_request_from_website(list_pr)
         return all_prods
 
+    def switch_sending_prescr(self):
+        self.click_element("xpath=(//span[@class='select2-arrow'])")
+        sleep(1)
+        self.click_element("xpath=(//div[@id='select2-drop']//div[contains(text(), 'Via our website (now)')])")
+        asserts.assert_equal(self.get_text("xpath=(//div[@id='s2id_id_type_of_sending_prescription']//span[1])"),
+            'Via our website (now)', 'Wrong method of sending a prescription was chosen')
+        return self
 
     @robot_alias("Edit_created_drug_request")
     def edit_drug_request(self, all_prods):
@@ -1519,10 +1547,18 @@ class VetoPharmHomePage(Page):
         quantity = self.find_elements("xpath=(//input[@name='quantity'])")[0]
         self.input_text(quantity, '4')
         sleep(1)
+        self.mouse_over_element_in_viewport("id=create-button")
+        sleep(2)
         self.click_element("id=create-button")
         all_prods.remove(removed_el_name)
         print all_prods
         list_update = '\n'.join(all_prods)
+        self.wait_until_element_is_visible("xpath=(//div[@class='modal-body'])", 60)
+        self.wait_until_element_is_visible("xpath=(//button[@class='close-modal']/span)", 30)
+        self.click_element("xpath=(//button[@class='close-modal']/span)")
+        sleep(4)
+        self.click_element("list of drug requests")
+        sleep(4)
         self.view_drug_request_from_website(list_update)
         edited_products = self.find_elements("xpath=(//div[@class='products'])")
         asserts.assert_false(removed_el_name in self.get_text(edited_products[1]),
@@ -1542,11 +1578,10 @@ class VetoPharmHomePage(Page):
         self.go_to_drug_requests_from_dashboard()
         self.body_should_contain_text("Status: your drug request is approved, you can move products to basket.",
             "The status has been not changed")
-        self.click_element("select all prods in drug request")
         self.click_element("id=move-to-basket-button")
         sleep(4)
-        self.element_should_be_visible("my basket from request", "Product has been not added to basket")
-        self.click_element("my basket from request")
+        self.wait_until_element_is_visible("xpath=(//a[@class='btn btn-primary button_site_style'])")
+        self.click_element("xpath=(//a[@class='btn btn-primary button_site_style'])")
         return self
 
     @robot_alias("Delete_drug_request_at_dashboard")
