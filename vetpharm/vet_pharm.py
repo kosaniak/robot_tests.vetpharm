@@ -356,6 +356,7 @@ class VetoPharmHomePage(Page):
             'No alert message about password confirmation fail')
         return self
 
+    @robot_alias("Register new account")
     def register_account(self, email=None, password=None):
         if email == None:
             email = self.email_generator()
@@ -373,35 +374,48 @@ class VetoPharmHomePage(Page):
         self.capture_page_screenshot()
         if self._page_contains('To activate your account, please click the link sent to your mailbox'):
             self.activate_new_account(email, password)
+            sleep(3)
             self.wait_until_element_is_visible("id=header-middle", 30)
+            self.capture_page_screenshot()
             self.body_should_contain_text('Your account was confirmed successfully',
                 'The account was not activated')
         return password
 
     def activate_new_account(self, email, password):
         self._current_browser().get('https://mail29.lwspanel.com/webmail/')
+        sleep(5)
         if self._is_element_present("id=rcmloginuser"):
             self.type_in_box(email, "id=rcmloginuser")
             self.type_in_box(password, "id=rcmloginpwd")
             self.click_element("id=rcmloginsubmit")
+        self.wait_until_element_is_visible("xpath=//td[@class='date']", 30)
+        if not self._is_element_present("xpath=//tr[@class='message unread']"):
+            self.click_element("xpath=//a[contains(text(), 'Date')]")
+        sleep(3)
+        self.capture_page_screenshot()
+        self.page_should_contain_element("xpath=//th[@class='date sortedDESC']")
         all_letters = self.find_activation_letter()
         while all_letters == []:
             self.reload_page()
             all_letters = self.find_activation_letter()
         self.click_element(all_letters[0])
-        sleep(3)
+        sleep(8)
         while self._page_contains("Thank you for registering on VetPharm!") is not True:
             self.reload_page()
             all_letters = self.find_activation_letter()
             self.click_element(all_letters[0])
+        self.capture_page_screenshot()
         self.select_frame("id=messagecontframe")
         self.focus("received email letters")
+        self.mouse_over_element_in_viewport("received email letters")
+        sleep(1)
         self.click_element("received email letters")
         sleep(3)
         self.close_prev_window_tab()
         return self
 
     def find_activation_letter(self):
+        self.find_elements("xpath=//table[@id='messagelist']//tr")
         self.wait_until_element_is_enabled("id=mailview-top", 25)
         body = self.find_element("id=mailview-top")
         all_letters = body.find_elements_by_xpath("//td[@class='subject']")
