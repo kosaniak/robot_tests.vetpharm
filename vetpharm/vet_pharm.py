@@ -1680,14 +1680,7 @@ class VetoPharmHomePage(Page):
         self.click_element("home delivery(Ger, Bel, Lux)")
         self.wait_until_element_is_visible("select paybox")
         self.click_element("select paybox")
-        self.wait_until_element_is_visible("paybox cardnumber")
-        self.type_in_box('1111222233334444', "paybox cardnumber")
-        self.click_element('id=id_expiry_month_1')
-        self.wait_until_element_is_visible("//select[@id='id_expiry_month_1']/option[2]")
-        self.click_element("//select[@id='id_expiry_month_1']/option[2]")
-        sleep(2)
-        self.type_in_box('123', "paybox ccv number")
-        self.click_element("continue paybox payment")
+        self.pay_with_paybox()
         self.test_checkout_preview()
         self.mouse_over_element_in_viewport("place order")
         self.click_element("place order")
@@ -1695,6 +1688,18 @@ class VetoPharmHomePage(Page):
         self.click_element("continue shopping")
         sleep(2)
         self.delete_prescription()
+        return self
+
+    def pay_with_paybox(self):
+        self.wait_until_element_is_visible("id=id_number")
+        self.type_in_box('1111222233334444', "id=id_number")
+        self.click_element('id=id_expiry_month_1')
+        self.wait_until_element_is_visible("//select[@id='id_expiry_month_1']/option[2]")
+        self.click_element("//select[@id='id_expiry_month_1']/option[2]")
+        sleep(2)
+        self.type_in_box('123', "paybox ccv number")
+        self.click_element("continue paybox payment")
+        sleep(3)
         return self
 
     def delete_prescription(self):
