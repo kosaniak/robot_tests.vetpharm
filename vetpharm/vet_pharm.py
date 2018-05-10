@@ -315,7 +315,10 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Return__to__site")
     def back_to_website(self):
+        self.mouse_over_element_in_viewport("back to site")
+        self.wait_until_element_is_visible("back to site")
         self.click_element("back to site")
+        sleep(3)
         self.body_should_contain_text('All products', 'Return to site button does not work')
         return self
 
