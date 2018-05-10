@@ -1720,7 +1720,90 @@ class VetoPharmHomePage(Page):
         else:
             element = locator
         self.driver.execute_script('return arguments[0].scrollIntoView();', element)
-        self.driver.execute_script("window.scrollBy(0, -150);")
         self.wait_until_element_is_visible(element)
         self.mouse_over(element)
+        return self
+
+#--------------------------------------------------------------------------------------
+#  Offline Order
+#--------------------------------------------------------------------------------------
+    @robot_alias("Choose element from list")
+    def choose_el_from_list(self, prod_locator):
+        available_prods = self.find_elements(prod_locator)
+        prod = choice(available_prods)
+        return prod
+
+    @robot_alias("Get child webelement")
+    def get_child_webel(self, parent_webelemet, child_xpath):
+        child_webel = parent_webelemet.find_element_by_xpath(child_xpath)
+        return child_webel
+
+    @robot_alias("Scroll to element out of viewport")
+    def mouse_over_element(self, locator):
+        if str(locator)[:5] == 'xpath':
+            element = self.find_element(locator)
+        else:
+            element = locator
+        self.driver.execute_script('return arguments[0].scrollIntoView();', element)
+        self.driver.execute_script("window.scrollBy(0, -50);")
+        self.wait_until_element_is_visible(element)
+        self.mouse_over(element)
+        return self
+
+    @robot_alias("Input into autocomplete")
+    def autocomplete(self, locator, text):
+        autocomp_box = self.find_element(locator)
+        self.click_element(autocomp_box)
+        autocomp_box.send_keys(text)
+        self.mouse_over(locator)
+        self.click_element_at_coordinates(locator, 0, 0)
+        return self
+
+    @robot_alias("Log into user e-mail")
+    def go_to_mail_site(self, email, password):
+        self._current_browser().get('https://mail29.lwspanel.com/webmail/')
+        if self._is_element_present("id=rcmloginuser"):
+            self.type_in_box(email, "id=rcmloginuser")
+            self.type_in_box(password, "id=rcmloginpwd")
+            self.click_element("id=rcmloginsubmit")
+        return self
+
+    @robot_alias("Find received letters")
+    def find_all_letters(self, letter_title):
+        all_letters = self.find_letters()
+        while all_letters == []:
+            self.reload_page()
+            all_letters = self.find_letters()
+        sleep(2)
+        for lett in all_letters:
+            current_title = self.get_text(lett)
+            if current_title[:5] == letter_title:
+                self.mouse_over(lett)
+                self.click_element_at_coordinates(lett, 0, 0)
+                break
+        sleep(3)
+        return self
+
+    def find_letters(self):
+        self.wait_until_element_is_enabled("id=mailview-top", 25)
+        body = self.find_element("id=mailview-top")
+        all_letters = body.find_elements_by_xpath("//td[@class='subject']/a/span")
+        return all_letters
+
+    @robot_alias("Check email content")
+    def check_text(self, expected_el):
+        self.select_frame("id=messagecontframe")
+        self.mouse_over_element(expected_el)
+        self.page_should_contain_element(expected_el,
+            "Current e-mail does not include necessary content")
+        return self
+
+    def log_into_account_from_email(self):
+        self._current_browser().get('http://vet-pharm.devel.vetopharm.quintagroup.com/')
+        sleep(5)
+        self.wait_until_element_is_visible("login or register")
+        self.successful_login_into_new_account()
+        sleep(4)
+        self._current_browser().get('https://mail29.lwspanel.com/webmail/')
+        sleep(4)
         return self
