@@ -433,7 +433,12 @@ class VetoPharmHomePage(Page):
         self.wait_until_element_is_visible("account pasword")
         self.type_in_box(password, "account pasword")
         self.click_element("delete account")
-        self.body_should_contain_text("Your profile has now been deleted. Thanks for using the site", "Profile was not deleted")
+        sleep(5)
+        deletemsg = "According to the French law we have to store the information " \
+                    "related to the veterinary drugs, like approved drug requests, prescriptions, " \
+                    "drug dispensings, during 5 years. Your health information will stay protected " \
+                    "and will not be shared or traded third parties for marketing purposes."
+        self.body_should_contain_text(deletemsg, "Profile was not deleted")
         return self    
 
     def type_in_box(self, txt, search_box):
