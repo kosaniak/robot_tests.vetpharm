@@ -74,6 +74,10 @@ Check English tags
     Compare added and displayed tags  ${english_tags}
 
 Check French tags
-    Select French Language
+    Switch To French
     Compare added and displayed tags  ${french_tags}
-    Select English Language
+    Switch To English
+
+Check leaving comments
+    Leave a comment
+    Edit a comment

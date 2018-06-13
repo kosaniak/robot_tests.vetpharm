@@ -183,6 +183,25 @@ Compare added and displayed tags
     \   Append To List  ${displayed_tags}  ${tag_title_lowercase}
     Compare Lists  ${already_added_tags}  ${displayed_tags}
 
+
+Leave a comment
+    Click Element  ${ask_question.leave_comment}
+    Sleep  2
+    Press Key  id=id_comment_text  I'm also curious about it
+    Click Element  ${ask_question.publish_comment}
+    Sleep  3
+    Page Should Contain  Your comment was successfully added
+    Page Should Contain  I'm also curious about it
+
+Edit a comment
+    Click Element  ${ask_question.edit_comment}
+    Sleep  1
+    Input Text  id=comment-edit-input  Doest it depend on number of drugs?
+    Click Element  id=edit-comment-save-btn
+    Sleep  5
+    Page Should Contain  Doest it depend on number of drugs?
+    Page Should Not Contain  I'm also curious about it
+
 #--------------------------------------------------------------------------------------
 #  Order Info
 #--------------------------------------------------------------------------------------

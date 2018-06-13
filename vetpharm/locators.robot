@@ -139,3 +139,7 @@ ${search_question}  xpath=//button[@class='btn search_button border_site_style']
 ${found_question_in_list}  xpath=//div[@id='product-description']/div[1]/div[1]
 ${view_found_question}  .//div[@class='link_icon']/a
 ${question_tag}  xpath=//div[@class='question_tags']//span
+
+${ask_question.leave_comment}  xpath=//a[@class='btn button_prime leave_comment']
+${ask_question.publish_comment}  xpath=//button[@class='btn button_prime publish']
+${ask_question.edit_comment}  xpath=//button[@class='btn btn-link edit-comment-btn link_site_style']
