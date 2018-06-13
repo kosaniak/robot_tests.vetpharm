@@ -8,6 +8,10 @@ ${input_username}  id=id_login-username
 ${input_password}  id=id_login-password
 ${submit_login}  xpath=//button[contains(concat(' ', normalize-space(@class), ' '), ' log-in-tbutton')]
 
+#--------------------------------------------------------------------------------------
+#  Place Order
+#--------------------------------------------------------------------------------------
+
 # offline order  order_info
 ${place_order}  xpath=//a[@href='/en-gb/dashboard/orders/add/']
 ${purchase_at_pharmacy}  xpath=//span[@class='list-group-item-text'][contains(text(), 'Purchase at the pharmacy')]
@@ -110,7 +114,28 @@ ${check_email.proceed_to_payment_btn}  xpath=//a[contains(text(), 'Proceed to pa
 ${check_email.vat_exempt_msg}  xpath=//div//p[contains(text(), 'YOUR ORDER IS EXEMPT FROM FRENCH VAT (VAT = 0%).')]
 ${check_email.proceed_to_payment}  xpath=//a[contains(text(), 'Proceed to payment')]
 
-
 ${delete_user}  xpath=//a[@class='btn btn-danger']
 ${confirm_user_deletion}  xpath=//button[@class='btn btn-danger']
 ${customers_list}  xpath=//i[@class='icon-group']/..
+
+#--------------------------------------------------------------------------------------
+#  Questions&Answers
+#--------------------------------------------------------------------------------------
+
+#questions&answers  ask_question
+
+${ask_question.q&a_button}  xpath=//div[@id='main_tabs']//a[contains(text(), 'Q&A')]
+${ask_question.ask_a_question_btn}  xpath=//div[@class='add_question']/button
+${ask_question.send_message}  xpath=//div[@class='add_question']//button[@class='btn button_prime send-message']
+${ask_question.last_question}  xpath=//div[@class='panel-body']//tbody//tr[1]
+
+${tag.species_eng}  xpath=//ul[@class='select2-results']/li/div
+${add_answer}  xpath=//div[@class='panel panel-warning']//a[@class='btn btn-warning']
+${ask_question.save}  xpath=//div[@class='content']//button[@class='btn btn-primary']
+${website_to_display}  xpath=//ul[@class='select2-results']//div
+${chosen_website_to_diplay}  xpath=//div[@id='s2id_id_sites_to_display']//div
+${approve_question}  xpath=//a[@class='btn btn-success']
+${search_question}  xpath=//button[@class='btn search_button border_site_style']
+${found_question_in_list}  xpath=//div[@id='product-description']/div[1]/div[1]
+${view_found_question}  .//div[@class='link_icon']/a
+${question_tag}  xpath=//div[@class='question_tags']//span

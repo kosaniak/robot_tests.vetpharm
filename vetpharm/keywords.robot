@@ -10,6 +10,10 @@ Variables  ../vetpharm/sensitive_settings.py
 
 Resource  locators.robot
 
+*** Variables ***
+${input_question_msg}  How much is delivery?
+${question_submission_nofication}  Your question was asked successfully
+
 *** Keywords ***
 #--------------------------------------------------------------------------------------
 #  Support keywords
@@ -32,6 +36,152 @@ Login into admin account
     Input Password  ${input_password}  ${password}
     Click Element  ${submit_login}
     Sleep  4
+
+
+Go from dashboard to Q&A page
+    Return to site
+    Wait Until Element Is Visible  ${ask_question.q&a_button}
+    Click Element  ${ask_question.q&a_button}
+
+
+Go to dashboard from website
+    Wait Until Element Is Visible  xpath=//div[@class='user-account']
+    Mouse Over  xpath=//div[@class='user-account']
+    Click Element  xpath=//div[@class='user-account']
+    Click Element  xpath=//a[contains(text(),'Dashboard')]
+
+
+Close chat box
+    Capture Page Screenshot
+    ${chatbox_is_visible} =  Run Keyword And Return Status  Element Should Be Visible  xpath=//a[@id='endChat']/span
+    Run Keyword If  ${chatbox_is_visible}  Run Keywords
+    ...     Mouse Over  xpath=//a[@id='endChat']/span
+    ...     Click Element  xpath=//a[@id='endChat']/span
+    Element Should Not Be Visible  //div[@id='chatPanel']
+
+#--------------------------------------------------------------------------------------
+#  Questions&Answers
+#--------------------------------------------------------------------------------------
+
+Submit a question
+    Wait Until Element Is Visible  ${ask_question.ask_a_question_btn}
+    Click Element  ${ask_question.ask_a_question_btn}
+    Wait Until Element Is Visible  id=id_name
+    Input Text  id=id_name  superuser
+    Input Text  id=id_email  superuservetpharm@gmail.com
+    Input Text  id=id_phone  +33 (0)3 81 60 35 06
+    Input Text  id=id_message  ${input_question_msg}
+    Click Element  ${ask_question.send_message}
+    Page Should Contain  ${question_submission_nofication}
+
+
+Check added question message
+    Go to dashboard from website
+    Wait Until Element Is Visible  ${customers_list}
+    Click Element At Coordinates  ${customers_list}  0  0
+    Sleep  1
+    Click Element  xpath=//a[contains(text(),'Product Questions')]
+    @{last_question} =  Get Webelements  ${ask_question.last_question}
+    ${question_msg_elem} =  Get child webelement  ${last_question[0]}  .//td[1]//a
+    ${found_question_message} =  Get Text  ${question_msg_elem}
+    Should Be Equal As Strings  ${found_question_message}  ${input_question_msg}
+    [Return]  ${last_question[0]}
+
+
+Check added question details
+    [Arguments]  ${last_question}
+    ${question_author} =  Get child webelement  ${last_question}  .//td[2]
+    ${found_question_author} =  Get Text  ${question_author}
+    Should Be Equal As Strings  ${found_question_author}  superuser(superuservetpharm@gmail.com)
+    ${question_phone} =  Get child webelement  ${last_question}  .//td[3]
+    ${found_question_phone} =  Get Text  ${question_phone}
+    Should Be Equal As Strings  ${found_question_phone}  +33 (0)3 81 60 35 06
+    ${question_status} =  Get child webelement  ${last_question}  .//td[8]
+    ${found_question_status} =  Get Text  ${question_status}
+    Should Be Equal As Strings  ${found_question_status}  Processing
+
+
+View question
+    [Arguments]  ${last_question}
+    ${view_question} =  Get child webelement  ${last_question}  .//a[@class='btn btn-primary']
+    Click Element  ${view_question}
+    Wait Until Element Is Visible  //h2[contains(text(), 'Question details')]
+
+
+Approve question
+    Scroll to element out of viewport  ${approve_question}
+    Capture Page Screenshot
+    Click Element  ${approve_question}
+    Sleep  2
+    Page Should Contain  Question's status was successfully changed
+
+
+Add tag
+    [Arguments]  ${list_of_tags}  ${range_of_limit}  ${tag_id}
+    :FOR  ${index}  IN RANGE  1  ${range_of_limit}
+    \   Click Element  id=s2id_${tag_id}
+    \   Sleep  1
+    \   ${tag_title} =  Choose tag  ${index}  //label[@for='${tag_id}']/..
+    \   ${tag_title_lowercase} =  Convert To Lowercase  ${tag_title}
+    \   Append To List  ${list_of_tags}  ${tag_title_lowercase}
+    [Return]  ${list_of_tags}
+
+
+Choose tag
+    [Arguments]  ${tag_idex}  ${search_tag_result}
+    ${chosen_tag} =  Choose element from list  ${tag.species_eng}
+    ${tag_title} =  Get Text  ${chosen_tag}
+    Scroll to element out of viewport  ${chosen_tag}
+    Click Element  ${chosen_tag}
+    Page Should Contain Element  xpath=//li[@class='select2-search-choice'][${tag_idex}]/div
+    ${added_tag_title} =  Get Text  xpath=${search_tag_result}//li[@class='select2-search-choice'][${tag_idex}]/div
+    Should Be Equal As Strings  ${tag_title}  ${added_tag_title}
+    [Return]  ${tag_title}
+
+
+Choose displaying question and approve it
+    Scroll to element out of viewport  xpath=//*[@id='id_show_on_site']
+    Click Element  id=id_show_on_site
+    Click Element  id=s2id_id_sites_to_display
+    Press Key  id=s2id_id_sites_to_display  vet-pharm
+    Click Element  ${website_to_display}
+    ${chosen_website} =  Get Text  ${chosen_website_to_diplay}
+    Should Be Equal As Strings  ${chosen_website}  vet-pharm.devel.vetopharm.quintagroup.com
+    Capture Page Screenshot
+    Scroll to element out of viewport  ${ask_question.save}
+    Click Element  ${ask_question.save}
+    Capture Page Screenshot
+
+
+Add answer
+    Scroll to element out of viewport  ${add_answer}
+    Click Element  ${add_answer}
+    Wait Until Element Is Visible  id=id_answer_text_ifr
+    Press Key  id=id_answer_text_ifr  It depends on the shipping method
+    Click Element  ${ask_question.save}
+    Sleep  4
+
+
+Find answer
+    Press Key  id=id_question  How much is delivery?
+    Click Element  ${search_question}
+    Sleep  3
+    ${my_question} =  Get Webelements  ${found_question_in_list}
+    ${view_btn} =  Get child webelement  ${my_question[0]}  ${view_found_question}
+    Click Element  ${view_btn}
+    Sleep  3
+    Page Should Contain  How much is delivery?
+
+
+Compare added and displayed tags
+    [Arguments]  ${already_added_tags}
+    @{displayed_tags_elements} =  Get Webelements  ${question_tag}
+    @{displayed_tags} =  Create List
+    :FOR  ${tag}  IN  @{displayed_tags_elements}
+    \   ${tag_title} =  Get Text  ${tag}
+    \   ${tag_title_lowercase} =  Convert To Lowercase  ${tag_title}
+    \   Append To List  ${displayed_tags}  ${tag_title_lowercase}
+    Compare Lists  ${already_added_tags}  ${displayed_tags}
 
 #--------------------------------------------------------------------------------------
 #  Order Info
@@ -460,9 +610,7 @@ Check basket price after discount deletion
 
 Go to customers list at dashboard
     Go To  http://vet-pharm.devel.vetopharm.quintagroup.com/
-    Wait Until Element Is Visible  xpath=//div[@class='user-account']
-    Click Element  xpath=//div[@class='user-account']
-    Click Element  xpath=//a[contains(text(),'Dashboard')]
+    Go to dashboard from website
     Wait Until Element Is Visible  ${customers_list}
     Click Element At Coordinates  ${customers_list}  0  0
     Sleep  1
