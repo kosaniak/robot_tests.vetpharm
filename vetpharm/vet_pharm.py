@@ -14,6 +14,7 @@ from robot.utils import asserts
 
 from robotpageobjects import Page, robot_alias
 
+#from ..vetdoc import vetdoc
 import sensitive_settings
 
 
@@ -93,8 +94,8 @@ class VetoPharmHomePage(Page):
         "search products": "id=ajax-search",
         "products list": "xpath=(//div[@class='products_list'])",
         "select product": "xpath=(//*[@id='add-products']/div/div/div[3]/button)",
-        "en button": "id=en-gb-comp",
-        "fr button": "id=fr-comp",
+        "en language": "id=en-gb-comp",
+        "fr language": "id=fr-comp",
         "widgets-list": "xpath=(//i[@class='fa fa-caret-down'])",
         "currency-widget": "id=currency-widget",
         "currency": "xpath=(//li[@id='currency-widget']//a[@class='trigger'])",
@@ -222,8 +223,19 @@ class VetoPharmHomePage(Page):
         "delete prescription at dashboard": "xpath=(//a[@class='btn btn-danger'])",
         "delete prescription": "xpath=(//button[@class='btn btn-danger'])",
         "delete drug request": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' delete-request-tbutton')])",
-        "confirm delete drug request": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' confirm-delete-request-tbutton')])"
+        "confirm delete drug request": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' confirm-delete-request-tbutton')])",
+        "radius btn": "xpath=(//div[@class='Select-menu-outer'])"
     }
+
+    def open(self, *args):
+        resolved_url = self._resolve_url(*args)
+        HeadlessLib = BuiltIn().get_library_instance('HeadlessLib')
+        HeadlessLib.open_headless_browser(self.browser)
+        self.go_to(resolved_url)
+
+        self.log("PO_BROWSER: %s" % (str(self.get_current_browser())), is_console=False)
+
+        return self
 
     def account_cleanup(fn):
         @wraps(fn)
@@ -457,9 +469,9 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("switch__between__languages")
     def change_language(self):
-        self.click_element("fr button")
+        self.click_element("fr language")
         self.body_should_contain_text("Tous les produits", "French was not selected")
-        self.click_element("en button")
+        self.click_element("en language")
         self.body_should_contain_text("All products", "English was not selected")
         return self
 
@@ -1730,8 +1742,9 @@ class VetoPharmHomePage(Page):
     @robot_alias("Choose element from list")
     def choose_el_from_list(self, prod_locator):
         available_prods = self.find_elements(prod_locator)
-        prod = choice(available_prods)
-        return prod
+        visible_prods = [prod for prod in available_prods if self._is_visible(prod)]
+        chosen_prod = choice(visible_prods)
+        return chosen_prod
 
     @robot_alias("Get child webelement")
     def get_child_webel(self, parent_webelemet, child_xpath):
@@ -1745,7 +1758,7 @@ class VetoPharmHomePage(Page):
         else:
             element = locator
         self.driver.execute_script('return arguments[0].scrollIntoView();', element)
-        self.driver.execute_script("window.scrollBy(0, -50);")
+        self.driver.execute_script("window.scrollBy(0, -10);")
         self.wait_until_element_is_visible(element)
         self.mouse_over(element)
         return self
@@ -1806,4 +1819,220 @@ class VetoPharmHomePage(Page):
         sleep(4)
         self._current_browser().get('https://mail29.lwspanel.com/webmail/')
         sleep(4)
+        return self
+
+#--------------------------------------------------------------------------------------
+#  Questions&Answers
+#--------------------------------------------------------------------------------------
+
+    @robot_alias("Compare_lists")
+    def set_comparison(self, list_one, list_two):
+        list_difference = list(set(list_one).symmetric_difference(set(list_two)))
+        asserts.assert_equal(len(list_difference), 0, 'Compared dictionaries contain divergent elements')
+        return self
+
+#--------------------------------------------------------------------------------------
+#  Search Results Page
+#--------------------------------------------------------------------------------------
+
+    @robot_alias("switch__to__french")
+    def select_french(self):
+        self.mouse_over_element_in_viewport("fr language")
+        sleep(2)
+        self.click_element("fr language")
+        sleep(4)
+        body_txt= self.get_text("css=body").encode("utf-8")
+        asserts.assert_true("Mon panier" in body_txt, "French was not selected")
+        return self
+
+    @robot_alias("switch__to__english")
+    def select_english(self):
+        self.mouse_over_element_in_viewport("en language")
+        sleep(2)
+        self.click_element("en language")
+        sleep(4)
+        self.body_should_contain_text("My basket", "English was not selected")
+        return self
+
+    @robot_alias("search__by__chosen__address")
+    def search__by__address(self):
+        self.click_element("xpath=//div[@id='main_tabs']//a[contains(text(), 'Find a vet')]")
+        self.wait_until_element_is_visible("address input box")
+        address= self.address_value()
+        self.mouse_over_element_in_viewport("address input box")
+        sleep(3)
+        self.type_in_search_box(address,"address input box")
+        index= self.test_vet_autocomplete("xpath=(//div[@class='pac-container pac-logo'])",
+                                    "xpath=//div[@class='pac-item']", address)
+        self.mouse_over(self.find_elements("xpath=(//div[@class='pac-item'])")[index])
+        self.click_element(self.find_elements("xpath=(//div[@class='pac-item'])")[index])
+        sleep(5)
+        self.wait_until_element_is_visible("distance filter", 25)
+        if not self._is_visible("distance filter"):
+            self.reload_page()
+            self.wait_until_element_is_visible("address input box")
+            self.mouse_over_element_in_viewport("address input box")
+            sleep(3)
+            self.clear_location_field()
+            self.type_in_search_box(address,"address input box")
+            sleep(2)
+            self.mouse_over(self.find_elements("xpath=(//div[@class='pac-item'])")[index])
+            self.click_element(self.find_elements("xpath=(//div[@class='pac-item'])")[index])
+        city_name= self.get_text(self.find_element("id=id_all"))
+        self.wait_until_element_is_visible("distance filter", 20)
+        if self._is_text_present('No results matching your query'):
+            self.clear_location_field()
+            self.search__by__address()
+        else: self.body_should_contain_text (city_name.lower(),
+            "The search results do not include the inquired city name")
+        return self
+
+    @robot_alias("search__by__chosen__name")
+    def search__by__name(self, term):
+        self.type_in_search_box(term, "name input box")
+        sleep(2)
+        if not self._is_visible("xpath=//*[@id='id_list_name']"):
+            self.click_element_at_coordinates("xpath=//*[@id='id_list_name']", 0, 0)
+            sleep(1)
+        index= self.test_vet_autocomplete("xpath=//*[@id='id_list_name']",
+                                    "xpath=//*[@id='id_list_name']/li", term[:4])
+        name= self.get_text("xpath=//*[@id='id_list_name']/li["+str (index)+"]/a/span")
+        self.mouse_over_element_in_viewport("xpath=//*[@id='id_list_name']/li["+str (index)+"]")
+        self.click_element("xpath=//*[@id='id_list_name']/li["+str (index)+"]")
+        sleep(8)
+        body_txt = self.get_text("css=body").encode("utf-8").lower()
+        if self.result_msg in body_txt: self.search__by__name(term)
+        else: self.body_should_contain_text(name,
+            "Page was not redirected to the corresponding profile")
+        return self
+
+    def test_vet_autocomplete(self, autocomplete, autocomp_item_locator, txt):
+        autocomplete_text= self.get_text(autocomplete).lower().splitlines()
+        sleep(2)
+        for element in autocomplete_text:
+            asserts.assert_true(txt.lower() in element,
+                "Autocomplete list contains suggestions other than %s" %txt)
+        index= random.randint(1, len(self.find_elements(autocomp_item_locator))-1)
+        return index
+
+    @robot_alias("Show__map__with__location")
+    def show_location_map(self, map_selector):
+        self.mouse_over_element_in_viewport("search vet")
+        sleep(2)
+        self.click_element("search vet")
+        asserts.assert_true(self.is_visible(map_selector),
+            "Map is not displayed")
+        return self
+
+    @robot_alias("search__by__chosen__species")
+    def species_search(self):
+        self.click_element("species option")
+        id_num = self.get_partial_id_number("xpath=//div[@class='search-filters']/div[@class='search-filters']//div[contains(text(), 'Species')]/..")
+        index= random.randrange(0, len(self.get_text("list of species").splitlines()))
+        selected_species= self.get_text("id=react-select-"+str(id_num)+"--option-"+str (index)+"")
+        self.mouse_over_element_in_viewport("id=react-select-"+str(id_num)+"--option-"+str (index)+"")
+        self.click_element("id=react-select-"+str(id_num)+"--option-"+str (index)+"")
+        sleep(4)
+        self.click_element("xpath=//h3[contains(text(), 'Find a vet')]")
+        if self._is_text_present('No results matching your query'):
+            self.delete_filters("species")
+            sleep(2)
+            self.species_search()
+        else:
+            self.check_search_result(selected_species)
+        return self
+
+    @robot_alias("search__by__chosen__specialty")
+    def specialty_search(self):
+        self.click_element("specialty option")
+        id_num = self.get_partial_id_number("xpath=//div[@class='search-filters']/div[@class='search-filters']//div[contains(text(), 'Specialty')]/..")
+        index= random.randrange(0, len(self.get_text("id=react-select-"+str(id_num)+"--list"+"").splitlines()))
+        selected_specialty= self.get_text("id=react-select-"+str(id_num)+"--option-"+str (index)+"")
+        self.mouse_over_element_in_viewport("id=react-select-"+str(id_num)+"--option-"+str (index)+"")
+        sleep(1)
+        self.click_element("id=react-select-"+str(id_num)+"--option-"+str (index)+"")
+        sleep(4)
+        self.click_element("xpath=//h3[contains(text(), 'Find a vet')]")
+        body_txt = self.get_text("css=body").encode("utf-8").lower()
+        if self.result_msg in body_txt:
+            self.delete_filters("specialty")
+            sleep(2)
+            self.specialty_search()
+        else:
+            self.click_element("xpath=//h3[contains(text(), 'Find a vet')]")
+            self.check_search_result(selected_specialty)
+        return self
+
+    @robot_alias("select__distance__with__filter")
+    def check_search_radius(self):
+        self.type_in_search_box('Lyon',"address input box")
+        sleep(1)
+        self.click_element_at_coordinates("xpath=/html/body/div[2]/div[1]", 0, 0)
+        sleep(4)
+        self.click_element("distance filter")
+        self.select_search_radius()
+        return self
+
+    def select_search_radius(self):
+        id_num = self.get_partial_id_number("xpath=//span[contains(text(), '5km')]")
+        index=0
+        for i in range(0, len(self.get_text("radius btn").splitlines())):
+            self.mouse_over_element_in_viewport("id=react-select-"+str(id_num)+"--option-"+str (index)+"")
+            search_radius= int(self.get_text("id=react-select-"+str(id_num)+"--option-"+str (index)+"")[:-2])
+            self.click_element("id=react-select-"+str(id_num)+"--option-"+str (index)+"")
+            self.check_distance(search_radius)
+            self.click_element("distance filter")
+            index += 1
+        self.mouse_over_element_in_viewport("id=react-select-"+str(id_num)+"--option-0")
+        self.click_element("id=react-select-"+str(id_num)+"--option-0")
+        sleep(3)
+        asserts.assert_equal(self.get_text(self.find_elements("xpath=(//div[@class='Select-value'])")[2]),
+            '5km', 'Distance has been not changed to 5km')
+        return search_radius
+
+    @robot_alias("Input into autocomplete")
+    def autocomplete_input(self, locator, text):
+        autocomp_box = self.find_element(locator)
+        self.click_element(autocomp_box)
+        autocomp_box.send_keys(text)
+        self.mouse_over(locator)
+        self.click_element_at_coordinates(locator, 0, 0)
+        return self
+
+    @robot_alias("Add vet to profile")
+    def add_vet_to_my_profile(self):
+        all_vets = self.find_elements("xpath=//div[@class='row']/ul/li")[:-7]
+        chosen_vet = all_vets[random.randrange(0, len(all_vets))]
+        vet_name = self.get_text(chosen_vet.find_element_by_xpath(".//a[@class='vet_name']"))
+        if not self._is_visible(chosen_vet.find_element_by_xpath(".//button[@class='btn vet-not-added']")):
+            self.search__by__address()
+        self.mouse_over_element_in_viewport(chosen_vet.find_element_by_xpath(".//button[@class='btn vet-not-added']"))
+        self.click_element(chosen_vet.find_element_by_xpath(".//button[@class='btn vet-not-added']"))
+        sleep(1)
+        self.page_should_contain_element(chosen_vet.find_element_by_xpath(".//button[@class='btn vet-added']"),
+                                        'Vet was not added to profile')
+        return vet_name
+
+    @robot_alias("Check list of veterinarians")
+    def check_added_vets(self, added_vet_name):
+        self.mouse_over_element_in_viewport("health of my animals")
+        self.click_element("health of my animals")
+        sleep(1)
+        self.click_element("my veterinarians")
+        self.wait_until_element_is_visible("xpath=//div[@class='vets_list']")
+        self.page_should_contain("Dr. "+added_vet_name, "Vet %s was not added to user profile." % added_vet_name)
+        return self
+
+    @robot_alias("Delete added vet")
+    def delete_vet(self, added_vet_name):
+        vet_to_delete = self.find_element("xpath=//li[@class='vet_item']//strong[contains(text(), 'Dr. "+added_vet_name+"')]")
+        self.mouse_over_element_in_viewport(vet_to_delete)
+        self.click_element(vet_to_delete)
+        self.mouse_over_element_in_viewport("xpath=//li[@class='vet_item open']//a[contains(text(), 'Delete')]")
+        self.click_element("xpath=//li[@class='vet_item open']//a[contains(text(), 'Delete')]")
+        sleep(6)
+        self.page_should_contain("Dr. "+added_vet_name+" was successfully removed from your account.",
+                                "Vet %s was not deleted" % added_vet_name)
+        self.page_should_not_contain_element("xpath=//li[@class='vet_item']//strong[contains(text(), 'Dr. "+added_vet_name+"')]",
+                                            "Vet %s was not deleted" % added_vet_name)
         return self
