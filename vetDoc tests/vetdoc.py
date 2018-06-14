@@ -25,7 +25,7 @@ class VetDocHomePage(Page):
         "address input box": "id=id_all",
         "name input box": "id=id_name",
         "language menu": "xpath=(//span[@class='navbar-toggler-icon'])",
-        "fr button": "id=fr-lang-button",
+        "fr button": "xpath=(//button[@id='fr-lang-button'])",
         "en button": "id=en-lang-button",
         "remove location": "xpath=(//div[@class='remove-loc']/i[@class='fa fa-times'])",
         "remove name": "xpath=(//div[@class='remove-name']/i[@class='fa fa-times'])",
@@ -43,14 +43,14 @@ class VetDocHomePage(Page):
         "dropdown arrow": "xpath=(.//*[@id='react-select-5--value-item'])",
         "switch to clinic": "xpath=(.//*[@id='react-select-5--option-1'])",
         "search results count": "xpath=(//div[@class='result-count text-center'])",
-        "address map": "id=map",
-        "filter tags": "xpath=(//ul[@class='specialities']/a)",
+        "address map": "xpath=(//div[@class='GMap'])",
+        "filter tags": "xpath=(//ul[@class='speciality']//a)",
         "list of clinics": "xpath=(//ul[@class='clinics']/li)",
         "list of veterinarians": "xpath=(//ul[@class='veterinarians']/li)",
-        "phone": "xpath=//div[@class='clinic_tel']/a",
-        "distance filter": "xpath=//div[@class='block-within']//div[@class='Select-control']//span[@class='Select-arrow-zone']",
+        "phone": "xpath=(//div[@class='clinic_tel']/a)",
+        "distance filter": "xpath=(//div[@class='block-within']//div[@class='Select-control']//span[@class='Select-arrow-zone'])",
         "search radius": "id=react-select-8--list",
-        "last page": "xpath=//div/div[4]/div[3]/nav/ul/li[10]"
+        "last page": "xpath=(//div/div[4]/div[3]/nav/ul/li[10])"
     }
 
 
@@ -87,34 +87,36 @@ class VetDocHomePage(Page):
     @robot_alias("switch__between__languages")
     def change_language(self):
         self.select_french()
-        self.click_element("language menu")
         self.select_english()
         return self
 
     @robot_alias("select__french__language")
     def select_french(self):
-        self.click_element("language menu")
-        self.click_button("fr button")
+        self.mouse_over_element_in_viewport("fr button")
+        self.click_element("fr button")
+        sleep(4)
         body_txt= self.get_text("css=body").encode("utf-8")
         asserts.assert_true("Espèce" in body_txt, "French was not selected")
         return self
 
     def select_english(self):
         self.click_button("en button")
+        sleep(4)
         self.body_should_contain_text("Species", "English was not selected")
         return self
 
     @robot_alias("clear__address__field")
     def clear_location_field(self):
-            self.clear_field("remove location","address input box")
-            return self
+        self.clear_field("remove location","address input box")
+        return self
 
     @robot_alias("clear__name__field")
     def clear_name_field(self):
-            self.clear_field("remove name","name input box")
-            return self
+        self.clear_field("remove name","name input box")
+        return self
 
     def clear_field(self, field_locator, box_locator):
+        self.mouse_over(field_locator)
         self.click_element(field_locator)
         box_value= self.find_element(box_locator).get_attribute('value')
         asserts.assert_true(box_value =="", 
@@ -127,6 +129,7 @@ class VetDocHomePage(Page):
         self.type_in_search_box(address,"address input box")
         index= self.test_autocomplete("xpath=(//div[@class='pac-container pac-logo'])", address)
         city_name= self.get_text("xpath=/html/body/div[2]/div["+str (index)+"]/span[2]")
+        self.mouse_over("xpath=/html/body/div[2]/div["+str (index)+"]")
         self.click_element("xpath=/html/body/div[2]/div["+str (index)+"]")
         body_txt = self.get_text("css=body").encode("utf-8").lower()
         if self.result_msg in body_txt: self.search__by__address()
@@ -139,7 +142,9 @@ class VetDocHomePage(Page):
         self.type_in_search_box(term, "name input box")
         index= self.test_autocomplete("xpath=//*[@id='id_list_name']", term[:4])
         name= self.get_text("xpath=//*[@id='id_list_name']/li["+str (index)+"]/a/span")
+        self.mouse_over_element_in_viewport("xpath=//*[@id='id_list_name']/li["+str (index)+"]")
         self.click_element("xpath=//*[@id='id_list_name']/li["+str (index)+"]")
+        sleep(5)
         body_txt = self.get_text("css=body").encode("utf-8").lower()
         if self.result_msg in body_txt: self.search__by__name(term)
         else: self.body_should_contain_text(name, 
@@ -154,6 +159,16 @@ class VetDocHomePage(Page):
                 "Autocomplete list contains suggestions other than %s" %txt)
         index= random.randint(1,len(autocomplete_text))
         return index
+
+    def mouse_over_element_in_viewport(self, locator):
+        if isinstance(locator, str):
+            element = self.find_element(locator)
+        else:
+            element = locator
+        self.driver.execute_script('return arguments[0].scrollIntoView();', element)
+        self.wait_until_element_is_visible(element)
+        self.mouse_over(element)
+        return self
 
     @robot_alias("switch__between__clinics__and__veterinarians")
     def select_category(self):
@@ -284,7 +299,9 @@ class VetDocHomePage(Page):
     @robot_alias("check__distance__filter")
     def change_search_radius(self):
         self.type_in_search_box('Lyon',"address input box")
-        self.click_element("xpath=/html/body/div[2]/div[1]")
+        sleep(1)
+        self.click_element_at_coordinates("xpath=/html/body/div[2]/div[1]", 0, 0)
+        sleep(4)
         self.click_element("distance filter")
         self.select_radius()
         return self

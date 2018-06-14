@@ -1,17 +1,21 @@
-from robotpageobjects import Page, robot_alias
+import os
+import sys
+import uuid
+from datetime import datetime
+from functools import wraps
+from random import choice, randint
+from string import ascii_lowercase
+from time import sleep
+from traceback import print_exc
+
 from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
 from robot.utils import asserts
-from time import sleep
-from random import randint, choice
-from string import ascii_lowercase
-from itertools import islice
-from datetime import datetime
-from selenium.webdriver import ActionChains
-from selenium import webdriver
-import uuid
+
+from robotpageobjects import Page, robot_alias
+
+#from ..vetdoc import vetdoc
 import sensitive_settings
-import os
 
 
 class VetoPharmHomePage(Page):
@@ -90,8 +94,8 @@ class VetoPharmHomePage(Page):
         "search products": "id=ajax-search",
         "products list": "xpath=(//div[@class='products_list'])",
         "select product": "xpath=(//*[@id='add-products']/div/div/div[3]/button)",
-        "en button": "id=en-gb-comp",
-        "fr button": "id=fr-comp",
+        "en language": "id=en-gb-comp",
+        "fr language": "id=fr-comp",
         "widgets-list": "xpath=(//i[@class='fa fa-caret-down'])",
         "currency-widget": "id=currency-widget",
         "currency": "xpath=(//li[@id='currency-widget']//a[@class='trigger'])",
@@ -219,8 +223,36 @@ class VetoPharmHomePage(Page):
         "delete prescription at dashboard": "xpath=(//a[@class='btn btn-danger'])",
         "delete prescription": "xpath=(//button[@class='btn btn-danger'])",
         "delete drug request": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' delete-request-tbutton')])",
-        "confirm delete drug request": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' confirm-delete-request-tbutton')])"
+        "confirm delete drug request": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' confirm-delete-request-tbutton')])",
+        "radius btn": "xpath=(//div[@class='Select-menu-outer'])"
     }
+
+    def open(self, *args):
+        resolved_url = self._resolve_url(*args)
+        HeadlessLib = BuiltIn().get_library_instance('HeadlessLib')
+        HeadlessLib.open_headless_browser(self.browser)
+        self.go_to(resolved_url)
+
+        self.log("PO_BROWSER: %s" % (str(self.get_current_browser())), is_console=False)
+
+        return self
+
+    def account_cleanup(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            self = args[0]
+            try:
+                return fn(*args, **kwargs)
+            except Exception as outer_e:
+                raise outer_e
+            finally:
+                try:
+                    self.delete_account(sensitive_settings.register_password)
+                except Exception:
+                    print(print_exc(sys.exc_info()))
+                    print('\nThe above exception occurred during handling the following exception:\n')
+                    raise outer_e
+        return wrapper
 
     def gen_name(self, length):
         """Generate a random name with the given number of characters."""
@@ -255,9 +287,24 @@ class VetoPharmHomePage(Page):
             'Login failed for user')
         return self
 
+    @robot_alias("Login__into__newly__created__account")
+    def successful_login_into_new_account(self):
+        self.login_into_acc(sensitive_settings.register_email, sensitive_settings.register_password)
+        sleep(3)
+        if self._is_text_present('Welcome back'):
+            created_account_status = True
+        elif self._is_text_present("This account is inactive.To activate your account, please click the link sent to your mailbox"):
+            self.activate_new_account(sensitive_settings.register_email, sensitive_settings.register_password)
+            self.wait_until_element_is_visible("user account", 25)
+            created_account_status = True
+        else:
+            created_account_status = False
+        print created_account_status
+        return created_account_status
+
     @robot_alias("Try__to__login__with__incorrect__credentials")
     def unsuccessful_login(self):
-        self.login_into_acc(sensitive_settings.email_generator(), sensitive_settings.gen_password())
+        self.login_into_acc(self.email_generator(), self.gen_password())
         self.body_should_contain_text('Please enter a correct username and password. Note that both fields may be case-sensitive', 
             'No alert message about incorrect credentials')
         return self
@@ -280,7 +327,10 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Return__to__site")
     def back_to_website(self):
+        self.mouse_over_element_in_viewport("back to site")
+        self.wait_until_element_is_visible("back to site")
         self.click_element("back to site")
+        sleep(3)
         self.body_should_contain_text('All products', 'Return to site button does not work')
         return self
 
@@ -293,7 +343,7 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Try__to__register__the __invalid__email")
     def invalid_email_registration(self):
-        self.register_account(self.email_generator()[:-5])
+        self.register_account(self.email_generator()[:-5], self.gen_password())
         self.body_should_contain_text('Enter a valid email address',
             'Successful registration for invalid email address')
         return self
@@ -311,14 +361,15 @@ class VetoPharmHomePage(Page):
         self.click_element("register")
         sleep(2)
         self.type_in_box(self.email_generator(), "registration email")
-        self.type_in_box(self.password, "registration password")
+        self.type_in_box(self.gen_password(), "registration password")
         self.type_in_box(self.gen_password(), "confirm password")
         self.click_button("registration submit")
         self.body_should_contain_text('The two password fields didn\'t match.',
             'No alert message about password confirmation fail')
         return self
 
-    def register_account(self, email=None):
+    @robot_alias("Register new account")
+    def register_account(self, email=None, password=None):
         if email == None:
             email = self.email_generator()
             password = self.gen_password()
@@ -335,35 +386,48 @@ class VetoPharmHomePage(Page):
         self.capture_page_screenshot()
         if self._page_contains('To activate your account, please click the link sent to your mailbox'):
             self.activate_new_account(email, password)
+            sleep(3)
             self.wait_until_element_is_visible("id=header-middle", 30)
+            self.capture_page_screenshot()
             self.body_should_contain_text('Your account was confirmed successfully',
                 'The account was not activated')
         return password
 
     def activate_new_account(self, email, password):
         self._current_browser().get('https://mail29.lwspanel.com/webmail/')
+        sleep(5)
         if self._is_element_present("id=rcmloginuser"):
             self.type_in_box(email, "id=rcmloginuser")
             self.type_in_box(password, "id=rcmloginpwd")
             self.click_element("id=rcmloginsubmit")
+        self.wait_until_element_is_visible("xpath=//td[@class='date']", 30)
+        if not self._is_element_present("xpath=//tr[@class='message unread']"):
+            self.click_element("xpath=//a[contains(text(), 'Date')]")
+        sleep(3)
+        self.capture_page_screenshot()
+        self.page_should_contain_element("xpath=//th[@class='date sortedDESC']")
         all_letters = self.find_activation_letter()
         while all_letters == []:
             self.reload_page()
             all_letters = self.find_activation_letter()
         self.click_element(all_letters[0])
-        sleep(3)
+        sleep(8)
         while self._page_contains("Thank you for registering on VetPharm!") is not True:
             self.reload_page()
             all_letters = self.find_activation_letter()
             self.click_element(all_letters[0])
+        self.capture_page_screenshot()
         self.select_frame("id=messagecontframe")
         self.focus("received email letters")
+        self.mouse_over_element_in_viewport("received email letters")
+        sleep(1)
         self.click_element("received email letters")
         sleep(3)
         self.close_prev_window_tab()
         return self
 
     def find_activation_letter(self):
+        self.find_elements("xpath=//table[@id='messagelist']//tr")
         self.wait_until_element_is_enabled("id=mailview-top", 25)
         body = self.find_element("id=mailview-top")
         all_letters = body.find_elements_by_xpath("//td[@class='subject']")
@@ -381,7 +445,12 @@ class VetoPharmHomePage(Page):
         self.wait_until_element_is_visible("account pasword")
         self.type_in_box(password, "account pasword")
         self.click_element("delete account")
-        self.body_should_contain_text("Your profile has now been deleted. Thanks for using the site", "Profile was not deleted")
+        sleep(5)
+        deletemsg = "According to the French law we have to store the information " \
+                    "related to the veterinary drugs, like approved drug requests, prescriptions, " \
+                    "drug dispensings, during 5 years. Your health information will stay protected " \
+                    "and will not be shared or traded third parties for marketing purposes."
+        self.body_should_contain_text(deletemsg, "Profile was not deleted")
         return self    
 
     def type_in_box(self, txt, search_box):
@@ -400,14 +469,15 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("switch__between__languages")
     def change_language(self):
-        self.click_element("fr button")
+        self.click_element("fr language")
         self.body_should_contain_text("Tous les produits", "French was not selected")
-        self.click_element("en button")
+        self.click_element("en language")
         self.body_should_contain_text("All products", "English was not selected")
         return self
 
     @robot_alias("select__currency")
     def change_currency(self):
+        self.select_with_search_filters()
         self.click_element("widgets-list")
         self.click_element("currency-widget")
         currency_widget = self.find_element("currency-widget")
@@ -418,6 +488,8 @@ class VetoPharmHomePage(Page):
         self.click_element("widgets-list")
         self.element_text_should_be("currency", selected_currency)
         currency_logo = self.get_text("currency logo")
+        prod_curr_list = self.find_elements("selected currency")
+        self.mouse_over_element_in_viewport(prod_curr_list[1])
         self.element_text_should_be("selected currency", currency_logo)
         return self
 
@@ -463,6 +535,7 @@ class VetoPharmHomePage(Page):
         print pr_name
         self.mouse_over_element_in_viewport(wishlist)
         self.click_element_at_coordinates(wishlist, 0, 0)
+        sleep(2)
         self.click_element_at_coordinates(default_wishlist[0], 0, 0)
         self.mouse_over_element_in_viewport("list of wishlists")
         self.click_element_at_coordinates("list of wishlists", 0, 0)
@@ -607,6 +680,7 @@ class VetoPharmHomePage(Page):
         print pr_name
         recently_viewed = self.find_elements("xpath=(//div[@class='owl-item active'])")
         choose_prod = choice(recently_viewed)
+        self.mouse_over_element_in_viewport(choose_prod)
         add_to_basket = choose_prod.find_element_by_xpath(".//button[contains(concat(' ', normalize-space(@class), ' '), ' add-to-basket-tbutton')]")
         self.mouse_over_element_in_viewport(add_to_basket)
         self.click_element_at_coordinates(add_to_basket, 0, 0)
@@ -840,6 +914,7 @@ class VetoPharmHomePage(Page):
         self.click_element("health center")
         self.click_element("my prescriptions")
         self.click_element("add prescription")
+        self.wait_until_element_is_visible("prescription date", 25)
         self.fill_in_prescription_form("prescription date", "calendar", ".//td[@class='day']")
         self.fill_in_prescription_form("add animals", "list of animals", ".//div[@class='col-sm-3 col-xs-4 animal-block']", "select animal")
         self.fill_in_prescription_form("add veterinarian", "list of vets", ".//li", "select veterinarian")
@@ -899,11 +974,13 @@ class VetoPharmHomePage(Page):
 
     def fill_in_prescription_form(self, add_btn, items, param, close_btn=None, product_name=None):
         self.wait_until_element_is_visible(add_btn)
+        self.mouse_over(add_btn)
+        sleep(2)
         self.click_element(add_btn)
         sleep(5)
         if add_btn == "prescription date":
             prev_month = self.find_elements("xpath=(//th[@class='prev'])")
-            self.click_element(prev_month[2])
+            self.click_element_at_coordinates(prev_month[2], 0, 0)
             sleep(1)
         info_block = self.find_elements(items)
         list_of_items = info_block[0].find_elements_by_xpath(param)
@@ -1020,26 +1097,21 @@ class VetoPharmHomePage(Page):
         self.mouse_over_element_in_viewport("new checkout address")
         self.click_element_at_coordinates("new checkout address", 0, 0)
         self.wait_until_element_is_visible("address autocomplete for checkout")
-        self.type_in_box(city,"address autocomplete for checkout")
-        sleep(1)
         self.click_element("address autocomplete for checkout")
-        if city == 'berlin':
-            self.wait_until_element_is_visible("berlin")
-            self.click_element_at_coordinates("berlin", 0, 0)
-        elif city == 'geneva':
-            self.wait_until_element_is_visible("geneva")
-            self.click_element_at_coordinates("geneva", 0, 0)
+        self.type_in_box(city,"address autocomplete for checkout")
+        sleep(3)
+        if not self._is_visible(city):
+            self.click_element("address autocomplete for checkout")
+        self.wait_until_element_is_visible(city)
+        self.click_element_at_coordinates(city, 0, 0)
+        if city == 'geneva':
             self.wait_until_element_is_visible("id=id_line1")
             self.type_in_box('Place Dorciere',"id=id_line1")
             self.type_in_box('1201',"id=id_postcode")
         elif city == 'les gets':
-            self.wait_until_element_is_visible("les gets")
-            self.click_element_at_coordinates("les gets", 0, 0)
             self.wait_until_element_is_visible("id=id_line1")
             self.type_in_box('Rue du Ctre',"id=id_line1")
-        else:
-            self.wait_until_element_is_visible("paris")
-            self.click_element_at_coordinates("paris", 0, 0)
+        elif city == 'paris':
             self.wait_until_element_is_visible("id=id_line1")
             self.type_in_box('Avenue Anatole',"id=id_line1")
             self.mouse_over_element_in_viewport("id=id_postcode")
@@ -1063,11 +1135,15 @@ class VetoPharmHomePage(Page):
         self.click_element("flex delivery service")
         self.click_element("during pickup payment")
         self.test_checkout_preview()
+        self.mouse_over_element_in_viewport("place order")
         self.click_element("place order")
+        self.wait_until_element_is_visible("continue shopping")
         self.click_element("continue shopping")
         return self
 
+
     @robot_alias("Proceed_to_checkout_and_create_account")
+    @account_cleanup
     def checkout_and_create_account(self):
         self.choose_checkout_user("checkout with a new account")
         self.current_frame_contains('Create your account and then you will be redirected back to the checkout process')
@@ -1082,10 +1158,12 @@ class VetoPharmHomePage(Page):
         self.click_element("pick up at the pharmacy")
         self.click_element("select bank transfer")
         self.test_checkout_preview()
+        self.mouse_over_element_in_viewport("place order")
         self.click_element("place order")
+        self.wait_until_element_is_visible("continue shopping")
         self.click_element("continue shopping")
-        self.delete_account(sensitive_settings.register_password)
         return self
+
 
     @robot_alias("Proceed_to_checkout_as_logged_in_user")
     def checkout_as_logged_in_user(self):
@@ -1097,22 +1175,18 @@ class VetoPharmHomePage(Page):
         self.click_element("business parcel delivery")
         self.mouse_over_element_in_viewport("select paypal")
         self.click_element("select paypal")
-        self.wait_until_element_is_visible('paypal login frame', 40)
-        self.select_frame('paypal login frame')
-        sleep(1)
+        sleep(30)
         username = self.get_webelements("paypal email login")[0]
         self.input_text(username, 'pharmacyshoptest-buyer@gmail.com')
         password = self.get_webelements("paypal password login")[0]
         self.input_text(password, 'X4ttLgRtAj61')
         sleep(2)
-        self.wait_until_element_is_enabled("paypal login btn")
         self.click_element("paypal login btn")
-        self.unselect_frame()
         sleep(10)
-        self.wait_until_element_is_not_visible(("xpath=(//*[@id='spinner'])"), 150)
         self.wait_until_element_is_enabled("paypal continue btn", 25)
         self.click_element("paypal continue btn")
-        self.wait_until_element_is_visible("place order", 30)
+        self.wait_until_element_is_visible("place order", 80)
+        self.mouse_over_element_in_viewport("place order")
         self.click_element("place order")
         self.wait_until_element_is_visible("xpath=(//h3[contains(text(), 'View my order')])")
         self.body_should_contain_text('Your order has been placed and a confirmation email has been sent - your order number is',
@@ -1154,7 +1228,9 @@ class VetoPharmHomePage(Page):
             price_inc_vat = price_inc_vat.replace(',','')
         price_inc_vat = float(price_inc_vat[1:])
         asserts.assert_not_equal(price_exl_vat, price_inc_vat, "Total price does not exclude VAT")
+        self.mouse_over_element_in_viewport("place order")
         self.click_element("place order")
+        self.wait_until_element_is_visible("continue shopping")
         self.click_element("continue shopping")
         return self
 
@@ -1264,7 +1340,10 @@ class VetoPharmHomePage(Page):
         self.select_with_prescription_filter('on prescription')
         self.select_with_LHP_filter()
         prod_name = self.product_preview_page()
-        self.wait_until_element_is_visible("xpath=(//*[@id='add_to_drug_request_form_main']/button)")
+        self.wait_until_element_is_visible("xpath=(//a[contains(text(), 'Online request')])")
+        self.mouse_over_element_in_viewport("xpath=(//a[contains(text(), 'Online request')])")
+        self.click_element("xpath=(//a[contains(text(), 'Online request')])")
+        sleep(2)
         self.mouse_over_element_in_viewport("xpath=(//*[@id='add_to_drug_request_form_main']/button)")
         self.click_element("xpath=(//*[@id='add_to_drug_request_form_main']/button)")
         self.wait_until_element_is_visible("id=add-to-drug-reques-modal", 25)
@@ -1280,6 +1359,7 @@ class VetoPharmHomePage(Page):
         self.select_with_prescription_filter('on prescription')
         product = self.select_product(True)
         pr_name = self.product_name(product)
+        self.mouse_over_element_in_viewport(product)
         print pr_name
         drug_req = product.find_element_by_xpath(".//*[@id='add_to_basket_form_main']/button")
         self.mouse_over_element_in_viewport(drug_req)
@@ -1294,6 +1374,7 @@ class VetoPharmHomePage(Page):
 
     def add_prescr_to_drug_request(self, prod_name):
         self.click_element("xpath=(//span[contains(text(),'Add prescription')])")
+        self.focus("xpath=(//div[@class='modal-dialog'])")
         prescr_list = self.find_elements("xpath=(//div[@class='prescr_block border_block'])")
         for i in prescr_list:
             self.mouse_over_element_in_viewport(i)
@@ -1339,6 +1420,7 @@ class VetoPharmHomePage(Page):
         return self
 
     def edit_drug_request_product(self, comment):
+        self.mouse_over_element_in_viewport("edit prod drug request")
         self.click_element("edit prod drug request")
         self.wait_until_element_is_visible('id=id_quantity')
         self.input_text('id=id_quantity', '25')
@@ -1376,6 +1458,7 @@ class VetoPharmHomePage(Page):
         self.click_element("my drug requests")
         sleep(1)
         self.body_should_contain_text(prod_name, "Product was not added to drug request")
+        self.switch_sending_prescr()
         self.click_element("id=create-button")
         sleep(3)
         self.body_should_contain_text('You have chosen to use our website as means to provide a copy of your prescription. Please add this prescription.',
@@ -1384,8 +1467,12 @@ class VetoPharmHomePage(Page):
         self.input_text("xpath=(//input[@name='quantity'])", '2')
         sleep(2)
         self.mouse_over_element_in_viewport("id=create-button")
+        sleep(2)
         self.click_element_at_coordinates("id=create-button", 0, 0)
-        sleep(5)
+        self.wait_until_element_is_visible("xpath=(//div[@class='modal-body'])", 80)
+        self.wait_until_element_is_visible("xpath=(//button[@class='close-modal']/span)", 30)
+        self.click_element("xpath=(//button[@class='close-modal']/span)")
+        sleep(4)
         body_txt = self.get_text("css=body").encode("utf-8").lower()
         asserts.assert_false('Associated prescription does not contain selected product.' in body_txt,
             'The prescription does not include necessary products')
@@ -1418,15 +1505,16 @@ class VetoPharmHomePage(Page):
             "The status has been not changed")
         sleep(1)
         self.check_comments()
-        self.click_element("select all prods in drug request")
         sleep(1)
         self.click_element("id=move-to-basket-button")
         sleep(4)
-        self.element_should_be_visible("my basket from request", "Product has been not added to basket")
-        self.click_element("my basket from request")
+        self.wait_until_element_is_visible("xpath=(//a[@class='btn btn-primary button_site_style'])")
+        self.click_element("xpath=(//a[@class='btn btn-primary button_site_style'])")
+        self.wait_until_element_is_visible("id=id_form-0-quantity", 30)
         self.input_text("id=id_form-0-quantity", '50')
         self.click_element("update quantity in basket")
         sleep(2)
+        self.wait_until_element_is_visible("xpath=(//span[@class='error-block'])", 30)
         self.element_should_be_visible("xpath=(//span[@class='error-block'])")
         sleep(2)
         self.input_text("id=id_form-0-quantity", '1')
@@ -1451,6 +1539,7 @@ class VetoPharmHomePage(Page):
         self.wait_until_element_is_visible("my drug requests")
         self.click_element("my drug requests")
         sleep(1)
+        self.switch_sending_prescr()
         self.click_element("id=create-button")
         sleep(3)
         self.body_should_contain_text('You have chosen to use our website as means to provide a copy of your prescription. Please add this prescription.',
@@ -1459,11 +1548,25 @@ class VetoPharmHomePage(Page):
         self.add_prescr_to_drug_request(list_pr)
         sleep(4)
         self.wait_until_element_is_visible("id=create-button")
+        self.mouse_over_element_in_viewport("id=create-button")
+        sleep(2)
         self.click_element("id=create-button")
+        self.wait_until_element_is_visible("xpath=(//div[@class='modal-body'])", 60)
+        self.wait_until_element_is_visible("xpath=(//button[@class='close-modal']/span)", 30)
+        self.click_element("xpath=(//button[@class='close-modal']/span)")
+        sleep(4)
+        self.click_element("list of drug requests")
         sleep(4)
         self.view_drug_request_from_website(list_pr)
         return all_prods
 
+    def switch_sending_prescr(self):
+        self.click_element("xpath=(//span[@class='select2-arrow'])")
+        sleep(1)
+        self.click_element("xpath=(//div[@id='select2-drop']//div[contains(text(), 'Via our website (now)')])")
+        asserts.assert_equal(self.get_text("xpath=(//div[@id='s2id_id_type_of_sending_prescription']//span[1])"),
+            'Via our website (now)', 'Wrong method of sending a prescription was chosen')
+        return self
 
     @robot_alias("Edit_created_drug_request")
     def edit_drug_request(self, all_prods):
@@ -1478,10 +1581,18 @@ class VetoPharmHomePage(Page):
         quantity = self.find_elements("xpath=(//input[@name='quantity'])")[0]
         self.input_text(quantity, '4')
         sleep(1)
+        self.mouse_over_element_in_viewport("id=create-button")
+        sleep(2)
         self.click_element("id=create-button")
         all_prods.remove(removed_el_name)
         print all_prods
         list_update = '\n'.join(all_prods)
+        self.wait_until_element_is_visible("xpath=(//div[@class='modal-body'])", 60)
+        self.wait_until_element_is_visible("xpath=(//button[@class='close-modal']/span)", 30)
+        self.click_element("xpath=(//button[@class='close-modal']/span)")
+        sleep(4)
+        self.click_element("list of drug requests")
+        sleep(4)
         self.view_drug_request_from_website(list_update)
         edited_products = self.find_elements("xpath=(//div[@class='products'])")
         asserts.assert_false(removed_el_name in self.get_text(edited_products[1]),
@@ -1501,11 +1612,10 @@ class VetoPharmHomePage(Page):
         self.go_to_drug_requests_from_dashboard()
         self.body_should_contain_text("Status: your drug request is approved, you can move products to basket.",
             "The status has been not changed")
-        self.click_element("select all prods in drug request")
         self.click_element("id=move-to-basket-button")
         sleep(4)
-        self.element_should_be_visible("my basket from request", "Product has been not added to basket")
-        self.click_element("my basket from request")
+        self.wait_until_element_is_visible("xpath=(//a[@class='btn btn-primary button_site_style'])")
+        self.click_element("xpath=(//a[@class='btn btn-primary button_site_style'])")
         return self
 
     @robot_alias("Delete_drug_request_at_dashboard")
@@ -1534,6 +1644,7 @@ class VetoPharmHomePage(Page):
         self.click_element("xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' select-method-tbutton')])")
         self.click_element("during pickup payment")
         self.test_checkout_preview()
+        self.mouse_over_element_in_viewport("place order")
         self.click_element("place order")
         sleep(2)
         self.click_element("continue shopping")
@@ -1581,15 +1692,26 @@ class VetoPharmHomePage(Page):
         self.click_element("home delivery(Ger, Bel, Lux)")
         self.wait_until_element_is_visible("select paybox")
         self.click_element("select paybox")
-        self.wait_until_element_is_visible("paybox cardnumber")
-        self.type_in_box('1111222233334444', "paybox cardnumber")
-        self.type_in_box('123', "paybox ccv number")
-        self.click_element("continue paybox payment")
+        self.pay_with_paybox()
         self.test_checkout_preview()
+        self.mouse_over_element_in_viewport("place order")
         self.click_element("place order")
+        self.wait_until_element_is_visible("continue shopping")
         self.click_element("continue shopping")
         sleep(2)
         self.delete_prescription()
+        return self
+
+    def pay_with_paybox(self):
+        self.wait_until_element_is_visible("id=id_number")
+        self.type_in_box('1111222233334444', "id=id_number")
+        self.click_element('id=id_expiry_month_1')
+        self.wait_until_element_is_visible("//select[@id='id_expiry_month_1']/option[2]")
+        self.click_element("//select[@id='id_expiry_month_1']/option[2]")
+        sleep(2)
+        self.type_in_box('123', "paybox ccv number")
+        self.click_element("continue paybox payment")
+        sleep(3)
         return self
 
     def delete_prescription(self):
@@ -1612,4 +1734,305 @@ class VetoPharmHomePage(Page):
         self.driver.execute_script('return arguments[0].scrollIntoView();', element)
         self.wait_until_element_is_visible(element)
         self.mouse_over(element)
+        return self
+
+#--------------------------------------------------------------------------------------
+#  Offline Order
+#--------------------------------------------------------------------------------------
+    @robot_alias("Choose element from list")
+    def choose_el_from_list(self, prod_locator):
+        available_prods = self.find_elements(prod_locator)
+        visible_prods = [prod for prod in available_prods if self._is_visible(prod)]
+        chosen_prod = choice(visible_prods)
+        return chosen_prod
+
+    @robot_alias("Get child webelement")
+    def get_child_webel(self, parent_webelemet, child_xpath):
+        child_webel = parent_webelemet.find_element_by_xpath(child_xpath)
+        return child_webel
+
+    @robot_alias("Scroll to element out of viewport")
+    def mouse_over_element(self, locator):
+        if str(locator)[:5] == 'xpath':
+            element = self.find_element(locator)
+        else:
+            element = locator
+        self.driver.execute_script('return arguments[0].scrollIntoView();', element)
+        self.driver.execute_script("window.scrollBy(0, -10);")
+        self.wait_until_element_is_visible(element)
+        self.mouse_over(element)
+        return self
+
+    @robot_alias("Input into autocomplete")
+    def autocomplete(self, locator, text):
+        autocomp_box = self.find_element(locator)
+        self.click_element(autocomp_box)
+        autocomp_box.send_keys(text)
+        self.mouse_over(locator)
+        self.click_element_at_coordinates(locator, 0, 0)
+        return self
+
+    @robot_alias("Log into user e-mail")
+    def go_to_mail_site(self, email, password):
+        self._current_browser().get('https://mail29.lwspanel.com/webmail/')
+        if self._is_element_present("id=rcmloginuser"):
+            self.type_in_box(email, "id=rcmloginuser")
+            self.type_in_box(password, "id=rcmloginpwd")
+            self.click_element("id=rcmloginsubmit")
+        return self
+
+    @robot_alias("Find received letters")
+    def find_all_letters(self, letter_title):
+        all_letters = self.find_letters()
+        while all_letters == []:
+            self.reload_page()
+            all_letters = self.find_letters()
+        sleep(2)
+        for lett in all_letters:
+            current_title = self.get_text(lett)
+            if current_title[:5] == letter_title:
+                self.mouse_over(lett)
+                self.click_element_at_coordinates(lett, 0, 0)
+                break
+        sleep(3)
+        return self
+
+    def find_letters(self):
+        self.wait_until_element_is_enabled("id=mailview-top", 25)
+        body = self.find_element("id=mailview-top")
+        all_letters = body.find_elements_by_xpath("//td[@class='subject']/a/span")
+        return all_letters
+
+    @robot_alias("Check email content")
+    def check_text(self, expected_el):
+        self.select_frame("id=messagecontframe")
+        self.mouse_over_element(expected_el)
+        self.page_should_contain_element(expected_el,
+            "Current e-mail does not include necessary content")
+        return self
+
+    def log_into_account_from_email(self):
+        self._current_browser().get('http://vet-pharm.devel.vetopharm.quintagroup.com/')
+        sleep(5)
+        self.wait_until_element_is_visible("login or register")
+        self.successful_login_into_new_account()
+        sleep(4)
+        self._current_browser().get('https://mail29.lwspanel.com/webmail/')
+        sleep(4)
+        return self
+
+#--------------------------------------------------------------------------------------
+#  Questions&Answers
+#--------------------------------------------------------------------------------------
+
+    @robot_alias("Compare_lists")
+    def set_comparison(self, list_one, list_two):
+        list_difference = list(set(list_one).symmetric_difference(set(list_two)))
+        asserts.assert_equal(len(list_difference), 0, 'Compared dictionaries contain divergent elements')
+        return self
+
+#--------------------------------------------------------------------------------------
+#  Search Results Page
+#--------------------------------------------------------------------------------------
+
+    @robot_alias("switch__to__french")
+    def select_french(self):
+        self.mouse_over_element_in_viewport("fr language")
+        sleep(2)
+        self.click_element("fr language")
+        sleep(4)
+        body_txt= self.get_text("css=body").encode("utf-8")
+        asserts.assert_true("Mon panier" in body_txt, "French was not selected")
+        return self
+
+    @robot_alias("switch__to__english")
+    def select_english(self):
+        self.mouse_over_element_in_viewport("en language")
+        sleep(2)
+        self.click_element("en language")
+        sleep(4)
+        self.body_should_contain_text("My basket", "English was not selected")
+        return self
+
+    @robot_alias("search__by__chosen__address")
+    def search__by__address(self):
+        self.click_element("xpath=//div[@id='main_tabs']//a[contains(text(), 'Find a vet')]")
+        self.wait_until_element_is_visible("address input box")
+        address= self.address_value()
+        self.mouse_over_element_in_viewport("address input box")
+        sleep(3)
+        self.type_in_search_box(address,"address input box")
+        index= self.test_vet_autocomplete("xpath=(//div[@class='pac-container pac-logo'])",
+                                    "xpath=//div[@class='pac-item']", address)
+        self.mouse_over(self.find_elements("xpath=(//div[@class='pac-item'])")[index])
+        self.click_element(self.find_elements("xpath=(//div[@class='pac-item'])")[index])
+        sleep(5)
+        self.wait_until_element_is_visible("distance filter", 25)
+        if not self._is_visible("distance filter"):
+            self.reload_page()
+            self.wait_until_element_is_visible("address input box")
+            self.mouse_over_element_in_viewport("address input box")
+            sleep(3)
+            self.clear_location_field()
+            self.type_in_search_box(address,"address input box")
+            sleep(2)
+            self.mouse_over(self.find_elements("xpath=(//div[@class='pac-item'])")[index])
+            self.click_element(self.find_elements("xpath=(//div[@class='pac-item'])")[index])
+        city_name= self.get_text(self.find_element("id=id_all"))
+        self.wait_until_element_is_visible("distance filter", 20)
+        if self._is_text_present('No results matching your query'):
+            self.clear_location_field()
+            self.search__by__address()
+        else: self.body_should_contain_text (city_name.lower(),
+            "The search results do not include the inquired city name")
+        return self
+
+    @robot_alias("search__by__chosen__name")
+    def search__by__name(self, term):
+        self.type_in_search_box(term, "name input box")
+        sleep(2)
+        if not self._is_visible("xpath=//*[@id='id_list_name']"):
+            self.click_element_at_coordinates("xpath=//*[@id='id_list_name']", 0, 0)
+            sleep(1)
+        index= self.test_vet_autocomplete("xpath=//*[@id='id_list_name']",
+                                    "xpath=//*[@id='id_list_name']/li", term[:4])
+        name= self.get_text("xpath=//*[@id='id_list_name']/li["+str (index)+"]/a/span")
+        self.mouse_over_element_in_viewport("xpath=//*[@id='id_list_name']/li["+str (index)+"]")
+        self.click_element("xpath=//*[@id='id_list_name']/li["+str (index)+"]")
+        sleep(8)
+        body_txt = self.get_text("css=body").encode("utf-8").lower()
+        if self.result_msg in body_txt: self.search__by__name(term)
+        else: self.body_should_contain_text(name,
+            "Page was not redirected to the corresponding profile")
+        return self
+
+    def test_vet_autocomplete(self, autocomplete, autocomp_item_locator, txt):
+        autocomplete_text= self.get_text(autocomplete).lower().splitlines()
+        sleep(2)
+        for element in autocomplete_text:
+            asserts.assert_true(txt.lower() in element,
+                "Autocomplete list contains suggestions other than %s" %txt)
+        index= random.randint(1, len(self.find_elements(autocomp_item_locator))-1)
+        return index
+
+    @robot_alias("Show__map__with__location")
+    def show_location_map(self, map_selector):
+        self.mouse_over_element_in_viewport("search vet")
+        sleep(2)
+        self.click_element("search vet")
+        asserts.assert_true(self.is_visible(map_selector),
+            "Map is not displayed")
+        return self
+
+    @robot_alias("search__by__chosen__species")
+    def species_search(self):
+        self.click_element("species option")
+        id_num = self.get_partial_id_number("xpath=//div[@class='search-filters']/div[@class='search-filters']//div[contains(text(), 'Species')]/..")
+        index= random.randrange(0, len(self.get_text("list of species").splitlines()))
+        selected_species= self.get_text("id=react-select-"+str(id_num)+"--option-"+str (index)+"")
+        self.mouse_over_element_in_viewport("id=react-select-"+str(id_num)+"--option-"+str (index)+"")
+        self.click_element("id=react-select-"+str(id_num)+"--option-"+str (index)+"")
+        sleep(4)
+        self.click_element("xpath=//h3[contains(text(), 'Find a vet')]")
+        if self._is_text_present('No results matching your query'):
+            self.delete_filters("species")
+            sleep(2)
+            self.species_search()
+        else:
+            self.check_search_result(selected_species)
+        return self
+
+    @robot_alias("search__by__chosen__specialty")
+    def specialty_search(self):
+        self.click_element("specialty option")
+        id_num = self.get_partial_id_number("xpath=//div[@class='search-filters']/div[@class='search-filters']//div[contains(text(), 'Specialty')]/..")
+        index= random.randrange(0, len(self.get_text("id=react-select-"+str(id_num)+"--list"+"").splitlines()))
+        selected_specialty= self.get_text("id=react-select-"+str(id_num)+"--option-"+str (index)+"")
+        self.mouse_over_element_in_viewport("id=react-select-"+str(id_num)+"--option-"+str (index)+"")
+        sleep(1)
+        self.click_element("id=react-select-"+str(id_num)+"--option-"+str (index)+"")
+        sleep(4)
+        self.click_element("xpath=//h3[contains(text(), 'Find a vet')]")
+        body_txt = self.get_text("css=body").encode("utf-8").lower()
+        if self.result_msg in body_txt:
+            self.delete_filters("specialty")
+            sleep(2)
+            self.specialty_search()
+        else:
+            self.click_element("xpath=//h3[contains(text(), 'Find a vet')]")
+            self.check_search_result(selected_specialty)
+        return self
+
+    @robot_alias("select__distance__with__filter")
+    def check_search_radius(self):
+        self.type_in_search_box('Lyon',"address input box")
+        sleep(1)
+        self.click_element_at_coordinates("xpath=/html/body/div[2]/div[1]", 0, 0)
+        sleep(4)
+        self.click_element("distance filter")
+        self.select_search_radius()
+        return self
+
+    def select_search_radius(self):
+        id_num = self.get_partial_id_number("xpath=//span[contains(text(), '5km')]")
+        index=0
+        for i in range(0, len(self.get_text("radius btn").splitlines())):
+            self.mouse_over_element_in_viewport("id=react-select-"+str(id_num)+"--option-"+str (index)+"")
+            search_radius= int(self.get_text("id=react-select-"+str(id_num)+"--option-"+str (index)+"")[:-2])
+            self.click_element("id=react-select-"+str(id_num)+"--option-"+str (index)+"")
+            self.check_distance(search_radius)
+            self.click_element("distance filter")
+            index += 1
+        self.mouse_over_element_in_viewport("id=react-select-"+str(id_num)+"--option-0")
+        self.click_element("id=react-select-"+str(id_num)+"--option-0")
+        sleep(3)
+        asserts.assert_equal(self.get_text(self.find_elements("xpath=(//div[@class='Select-value'])")[2]),
+            '5km', 'Distance has been not changed to 5km')
+        return search_radius
+
+    @robot_alias("Input into autocomplete")
+    def autocomplete_input(self, locator, text):
+        autocomp_box = self.find_element(locator)
+        self.click_element(autocomp_box)
+        autocomp_box.send_keys(text)
+        self.mouse_over(locator)
+        self.click_element_at_coordinates(locator, 0, 0)
+        return self
+
+    @robot_alias("Add vet to profile")
+    def add_vet_to_my_profile(self):
+        all_vets = self.find_elements("xpath=//div[@class='row']/ul/li")[:-7]
+        chosen_vet = all_vets[random.randrange(0, len(all_vets))]
+        vet_name = self.get_text(chosen_vet.find_element_by_xpath(".//a[@class='vet_name']"))
+        if not self._is_visible(chosen_vet.find_element_by_xpath(".//button[@class='btn vet-not-added']")):
+            self.search__by__address()
+        self.mouse_over_element_in_viewport(chosen_vet.find_element_by_xpath(".//button[@class='btn vet-not-added']"))
+        self.click_element(chosen_vet.find_element_by_xpath(".//button[@class='btn vet-not-added']"))
+        sleep(1)
+        self.page_should_contain_element(chosen_vet.find_element_by_xpath(".//button[@class='btn vet-added']"),
+                                        'Vet was not added to profile')
+        return vet_name
+
+    @robot_alias("Check list of veterinarians")
+    def check_added_vets(self, added_vet_name):
+        self.mouse_over_element_in_viewport("health of my animals")
+        self.click_element("health of my animals")
+        sleep(1)
+        self.click_element("my veterinarians")
+        self.wait_until_element_is_visible("xpath=//div[@class='vets_list']")
+        self.page_should_contain("Dr. "+added_vet_name, "Vet %s was not added to user profile." % added_vet_name)
+        return self
+
+    @robot_alias("Delete added vet")
+    def delete_vet(self, added_vet_name):
+        vet_to_delete = self.find_element("xpath=//li[@class='vet_item']//strong[contains(text(), 'Dr. "+added_vet_name+"')]")
+        self.mouse_over_element_in_viewport(vet_to_delete)
+        self.click_element(vet_to_delete)
+        self.mouse_over_element_in_viewport("xpath=//li[@class='vet_item open']//a[contains(text(), 'Delete')]")
+        self.click_element("xpath=//li[@class='vet_item open']//a[contains(text(), 'Delete')]")
+        sleep(6)
+        self.page_should_contain("Dr. "+added_vet_name+" was successfully removed from your account.",
+                                "Vet %s was not deleted" % added_vet_name)
+        self.page_should_not_contain_element("xpath=//li[@class='vet_item']//strong[contains(text(), 'Dr. "+added_vet_name+"')]",
+                                            "Vet %s was not deleted" % added_vet_name)
         return self

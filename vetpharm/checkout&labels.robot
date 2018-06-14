@@ -21,14 +21,14 @@ Proceed to checkout as guest with payment during pickup
     Add product to basket from preview
     Checkout as guest with payment during pickup
 
-Proceed to checkout and create account
-    Add product to basket
-    Proceed to checkout and create account
-
 Proceed to checkout with excluding VAT payment
     Add product to basket from preview  2
     Add product to basket from preview  5
     Proceed to checkout excluding vat
+
+Proceed to checkout and create account
+    Add product to basket
+    Proceed to checkout and create account
 
 Verify unreferenced product label in search results
     Verify unreferenced product label

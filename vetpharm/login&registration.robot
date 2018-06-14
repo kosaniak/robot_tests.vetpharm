@@ -3,6 +3,7 @@ Documentation  Tests for https://vetpharm.fr
 
 Library  vet_pharm.py
 Library  vet_pharm.VetoPharmHomePage
+Variables  ../vetpharm/sensitive_settings.py
 
 Suite Teardown  Close Browser
 
@@ -32,7 +33,7 @@ Test if password confirmation works
     Unsuccessful Password Confirmation
 
 Test if registration works
-    ${password}=  register_account
+    ${password}=  register_account  ${register_email}
     Set Suite Variable  ${password}
 
 Delete account
