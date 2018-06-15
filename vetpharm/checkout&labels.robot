@@ -11,7 +11,7 @@ Suite Teardown  Close Browser
 
 Open VetoPharm homepage
     Open VetoPharm
-    Maximize Window
+    Set Window Size  1920  1080
 
 Proceed to checkout as logged in user
     Add product to basket

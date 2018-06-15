@@ -10,7 +10,7 @@ Suite Teardown  Close Browser
 *** Test Cases ***
 Open VetoPharm homepage
     Open VetoPharm
-    Maximize Browser Window
+    Set Window Size  1920  1080
 
 #--------------------------------------------------------------------------------------
 #  Place order with existing user and checking search filters
