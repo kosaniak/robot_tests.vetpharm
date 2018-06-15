@@ -56,7 +56,7 @@ class VetoPharmHomePage(Page):
         "product quantity": "id=id_lines-0-quantity",
         "update quantity": "id=update-wish-quantities",
         "wishlist settings": "xpath=(//i[@class='fa fa-chevron-down'])",
-        "delete product": "xpath=(//a[@class='remove-from-wishlist-tbutton'])",
+        "delete product": "xpath=(//a[@class='bgc_site_style remove_butt']/i)",
         "remove from wishlist": "xpath=(//button[@class='btn btn-lg btn-danger'])",
         "create new wishlist": "xpath=(//div[@class='wish_butt'])",
         "wishlist name": "id=id_name",
@@ -110,9 +110,10 @@ class VetoPharmHomePage(Page):
         "shipping country": "xpath=(//li[@id='shipping-widget']//a[contains(@class, 'trigger')])",
         "tax dropdown":  "xpath=(//ul[@class='tax_dropdown'])",
         "view prices": "xpath=(//span[contains(text(),'View prices')])",
-        "search filters": "xpath=(//div[contains(text(),'FILTERS')])",
+        "search filters": "xpath=(//div[@class='block_heading'])",
         "availability filter": "xpath=(//button[@class='filter-button']/span[contains(text(),'Availability')])",
         "availiable product": "xpath=(//span[@class='item-name'][contains(text(),'Available')])",
+        "unavailable product": "xpath=(//span[@class='item-name'][contains(text(),'Unavailable (drug restriction)')])",
         "prescription filter": "xpath=(//button[@class='filter-button']/span[contains(text(),'Prescription ?')])",
         "no prescription": "xpath=(//span[@class='item-name'][contains(text(),'Issuance without prescription')])",
         "add files to prescription": "id=add-files-under",
@@ -164,6 +165,7 @@ class VetoPharmHomePage(Page):
         "Livraison domicile (Suisse)": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' select-method-tbutton')])",
         "select bank transfer": "xpath=(//div[@class='pay_select']//input[@value='bank-transfer']/../button[contains(concat(' ', normalize-space(@class), ' '), ' select-tbutton')])",
         "received email letters": "xpath=(//*[@id='message-htmlpart1']/div/p[2]/a)",
+        "log in paypal": "xpath=//a[@class='btn full ng-binding']",
         "paypal email login": "xpath=(//form[@name='login']//input[@id='email'])",
         "paypal password login": "xpath=(//form[@name='login']//input[@id='password'])",
         "home delivery": "xpath=(//*[@id='2']/div/div/div[3]/form/button)",
@@ -224,7 +226,8 @@ class VetoPharmHomePage(Page):
         "delete prescription": "xpath=(//button[@class='btn btn-danger'])",
         "delete drug request": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' delete-request-tbutton')])",
         "confirm delete drug request": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' confirm-delete-request-tbutton')])",
-        "radius btn": "xpath=(//div[@class='Select-menu-outer'])"
+        "radius btn": "xpath=(//div[@class='Select-menu-outer'])",
+        "close chatbox": "xpath=(//a[@id='endChat']/span)"
     }
 
     def open(self, *args):
@@ -446,10 +449,12 @@ class VetoPharmHomePage(Page):
         self.type_in_box(password, "account pasword")
         self.click_element("delete account")
         sleep(5)
-        deletemsg = "According to the French law we have to store the information " \
-                    "related to the veterinary drugs, like approved drug requests, prescriptions, " \
-                    "drug dispensings, during 5 years. Your health information will stay protected " \
-                    "and will not be shared or traded third parties for marketing purposes."
+        deletemsg = "According to French law, for a minimum of 5 years, " \
+                    "we have the obligation to store information related to veterinary drugs, " \
+                    "like approved drug requests, prescriptions, drug dispensings. " \
+                    "During this period, your health information will remain protected " \
+                    "and will not be shared or exchanged with third parties for marketing, " \
+                    "commercial or any other purposes."
         self.body_should_contain_text(deletemsg, "Profile was not deleted")
         return self    
 
