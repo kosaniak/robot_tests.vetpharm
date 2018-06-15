@@ -56,7 +56,7 @@ class VetoPharmHomePage(Page):
         "product quantity": "id=id_lines-0-quantity",
         "update quantity": "id=update-wish-quantities",
         "wishlist settings": "xpath=(//i[@class='fa fa-chevron-down'])",
-        "delete product": "xpath=(//a[@class='remove-from-wishlist-tbutton'])",
+        "delete product": "xpath=(//a[@class='bgc_site_style remove_butt']/i)",
         "remove from wishlist": "xpath=(//button[@class='btn btn-lg btn-danger'])",
         "create new wishlist": "xpath=(//div[@class='wish_butt'])",
         "wishlist name": "id=id_name",
@@ -110,9 +110,10 @@ class VetoPharmHomePage(Page):
         "shipping country": "xpath=(//li[@id='shipping-widget']//a[contains(@class, 'trigger')])",
         "tax dropdown":  "xpath=(//ul[@class='tax_dropdown'])",
         "view prices": "xpath=(//span[contains(text(),'View prices')])",
-        "search filters": "xpath=(//div[contains(text(),'FILTERS')])",
+        "search filters": "xpath=(//div[@class='block_heading'])",
         "availability filter": "xpath=(//button[@class='filter-button']/span[contains(text(),'Availability')])",
         "availiable product": "xpath=(//span[@class='item-name'][contains(text(),'Available')])",
+        "unavailable product": "xpath=(//span[@class='item-name'][contains(text(),'Unavailable (drug restriction)')])",
         "prescription filter": "xpath=(//button[@class='filter-button']/span[contains(text(),'Prescription ?')])",
         "no prescription": "xpath=(//span[@class='item-name'][contains(text(),'Issuance without prescription')])",
         "add files to prescription": "id=add-files-under",
@@ -164,6 +165,7 @@ class VetoPharmHomePage(Page):
         "Livraison domicile (Suisse)": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' select-method-tbutton')])",
         "select bank transfer": "xpath=(//div[@class='pay_select']//input[@value='bank-transfer']/../button[contains(concat(' ', normalize-space(@class), ' '), ' select-tbutton')])",
         "received email letters": "xpath=(//*[@id='message-htmlpart1']/div/p[2]/a)",
+        "log in paypal": "xpath=//a[@class='btn full ng-binding']",
         "paypal email login": "xpath=(//form[@name='login']//input[@id='email'])",
         "paypal password login": "xpath=(//form[@name='login']//input[@id='password'])",
         "home delivery": "xpath=(//*[@id='2']/div/div/div[3]/form/button)",
@@ -224,7 +226,8 @@ class VetoPharmHomePage(Page):
         "delete prescription": "xpath=(//button[@class='btn btn-danger'])",
         "delete drug request": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' delete-request-tbutton')])",
         "confirm delete drug request": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' confirm-delete-request-tbutton')])",
-        "radius btn": "xpath=(//div[@class='Select-menu-outer'])"
+        "radius btn": "xpath=(//div[@class='Select-menu-outer'])",
+        "close chatbox": "xpath=(//a[@id='endChat']/span)"
     }
 
     def open(self, *args):
@@ -446,10 +449,12 @@ class VetoPharmHomePage(Page):
         self.type_in_box(password, "account pasword")
         self.click_element("delete account")
         sleep(5)
-        deletemsg = "According to the French law we have to store the information " \
-                    "related to the veterinary drugs, like approved drug requests, prescriptions, " \
-                    "drug dispensings, during 5 years. Your health information will stay protected " \
-                    "and will not be shared or traded third parties for marketing purposes."
+        deletemsg = "According to French law, for a minimum of 5 years, " \
+                    "we have the obligation to store information related to veterinary drugs, " \
+                    "like approved drug requests, prescriptions, drug dispensings. " \
+                    "During this period, your health information will remain protected " \
+                    "and will not be shared or exchanged with third parties for marketing, " \
+                    "commercial or any other purposes."
         self.body_should_contain_text(deletemsg, "Profile was not deleted")
         return self    
 
@@ -473,6 +478,8 @@ class VetoPharmHomePage(Page):
         self.body_should_contain_text("Tous les produits", "French was not selected")
         self.click_element("en language")
         self.body_should_contain_text("All products", "English was not selected")
+        if self._is_visible("id=cookieAgree"):
+            self.click_element("id=cookieAgree")
         return self
 
     @robot_alias("select__currency")
@@ -489,7 +496,7 @@ class VetoPharmHomePage(Page):
         self.element_text_should_be("currency", selected_currency)
         currency_logo = self.get_text("currency logo")
         prod_curr_list = self.find_elements("selected currency")
-        self.mouse_over_element_in_viewport(prod_curr_list[1])
+        self.mouse_over_element_in_viewport(prod_curr_list[0])
         self.element_text_should_be("selected currency", currency_logo)
         return self
 
@@ -598,8 +605,6 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Delete__product__from__wishlist")
     def delete_wishlist_product(self):
-        self.click_element("wishlist settings")
-        sleep(1)
         self.click_element("delete product")
         sleep(1)
         self.click_element("remove from wishlist")
@@ -624,6 +629,9 @@ class VetoPharmHomePage(Page):
         dropdown_toggle = last_wishlist.find_element_by_tag_name("button")
         self.click_element(dropdown_toggle)
         delete_btn = last_wishlist.find_elements_by_tag_name("li")[-1]
+        if self._is_visible("close chatbox"):
+            self.click_element("close chatbox")
+        sleep(1)
         self.click_element(delete_btn)
         self.click_element("delete wishlist")
         self.body_should_contain_text("Your 'For my cat' wish list has been deleted", '')
@@ -681,7 +689,7 @@ class VetoPharmHomePage(Page):
         recently_viewed = self.find_elements("xpath=(//div[@class='owl-item active'])")
         choose_prod = choice(recently_viewed)
         self.mouse_over_element_in_viewport(choose_prod)
-        add_to_basket = choose_prod.find_element_by_xpath(".//button[contains(concat(' ', normalize-space(@class), ' '), ' add-to-basket-tbutton')]")
+        add_to_basket = choose_prod.find_element_by_xpath(".//button[@class='btn btn-add-to-basket button_prime']")
         self.mouse_over_element_in_viewport(add_to_basket)
         self.click_element_at_coordinates(add_to_basket, 0, 0)
         sleep(4)
@@ -692,7 +700,7 @@ class VetoPharmHomePage(Page):
         return self
 
     def check_veterinary_drug_label(self):
-        self.wait_until_element_is_visible("id=add-to-basket-modal", 20)
+        self.wait_until_element_is_visible("id=add-to-basket-modal", 50)
         checkbox = self.find_elements("id=id_read_instructions", False)
         if len(checkbox) != 0 and checkbox[-1].is_displayed() != False:
                 self.click_element_at_coordinates(checkbox[-1], 0, 0)
@@ -726,21 +734,32 @@ class VetoPharmHomePage(Page):
 
     def select_with_search_filters(self):
         self.wait_until_element_is_visible("search filters")
-        self.click_element("search filters")
+        if self._is_visible("id=cookieAgree"):
+            self.click_element("id=cookieAgree")
+        self.click_element_at_coordinates("search filters", 0, 0)
+        sleep(2)
         self.click_element("availability filter")
         self.click_element("availiable product")
         sleep(1)
         return self
 
     def select_with_prescription_filter(self, prescription_type):
-        self.click_element("search filters")
+        if self._is_visible("id=cookieAgree"):
+            self.click_element("id=cookieAgree")
+        self.click_element_at_coordinates("search filters", 0, 0)
+        sleep(1)
+        self.mouse_over_element_in_viewport("prescription filter")
+        sleep(1)
         self.click_element("prescription filter")
         sleep(2)
         self.click_element(prescription_type)
         return self
 
     def select_with_LHP_filter(self):
-        self.click_element("search filters")
+        if self._is_visible("id=cookieAgree"):
+            self.click_element("id=cookieAgree")
+        self.click_element_at_coordinates("search filters", 0, 0)
+        sleep(2)
         self.click_element("livestock health program filter")
         self.click_element("LHP beef production")
         sleep(1)
@@ -1048,10 +1067,21 @@ class VetoPharmHomePage(Page):
     @robot_alias("Redirect_to_purchase_from_bovi-pharm")
     def redirect_from_bovi_pharm(self):
         self._current_browser().get('https://bovi-pharm.devel.vetopharm.quintagroup.com/en-gb/')
+        self.click_element("all products")
         self.wait_until_element_is_visible("search filters")
-        self.click_element("search filters")
+        if self._is_visible("id=cookieAgree"):
+            self.click_element("id=cookieAgree")
+        self.click_element_at_coordinates("search filters", 0, 0)
+        sleep(2)
         self.click_element("drug list filter")
+        self.mouse_over_element_in_viewport("drug list not applicable")
         self.click_element("drug list not applicable")
+        sleep(2)
+        self.click_element_at_coordinates("search filters", 0, 0)
+        sleep(2)
+        self.click_element("availability filter")
+        self.mouse_over_element_in_viewport("unavailable product")
+        self.click_element("unavailable product")
         sleep(2)
         products_list = self.find_element("list of products")
         products = products_list.find_elements_by_tag_name("article")
@@ -1176,14 +1206,19 @@ class VetoPharmHomePage(Page):
         self.mouse_over_element_in_viewport("select paypal")
         self.click_element("select paypal")
         sleep(30)
+        self.wait_until_element_is_visible("log in paypal")
+        self.click_element("log in paypal")
+        sleep(10)
+        self.wait_until_element_is_visible("paypal email login")
         username = self.get_webelements("paypal email login")[0]
         self.input_text(username, 'pharmacyshoptest-buyer@gmail.com')
         password = self.get_webelements("paypal password login")[0]
         self.input_text(password, 'X4ttLgRtAj61')
         sleep(2)
         self.click_element("paypal login btn")
-        sleep(10)
-        self.wait_until_element_is_enabled("paypal continue btn", 25)
+        sleep(20)
+        self.wait_until_element_is_not_visible("id=preloaderSpinner", 30)
+        self.wait_until_element_is_visible("paypal continue btn", 60)
         self.click_element("paypal continue btn")
         self.wait_until_element_is_visible("place order", 80)
         self.mouse_over_element_in_viewport("place order")
@@ -1194,6 +1229,7 @@ class VetoPharmHomePage(Page):
         self.click_element("continue shopping")
         self.log_out()
         return self
+
 
     @robot_alias("Proceed_to_checkout_excluding_vat")
     def checkout_exluding_vat(self):
@@ -1315,7 +1351,10 @@ class VetoPharmHomePage(Page):
     def search_labels_in_pages(self, search_filter, subfilter_name, label_locator, page=None):
         if page == None:
             self.wait_until_element_is_visible("search filters")
-            self.click_element("search filters")
+            if self._is_visible("id=cookieAgree"):
+                self.click_element("id=cookieAgree")
+            self.click_element_at_coordinates("search filters", 0, 0)
+            sleep(2)
             self.click_element(search_filter)
             self.click_element(subfilter_name)
             sleep(1)

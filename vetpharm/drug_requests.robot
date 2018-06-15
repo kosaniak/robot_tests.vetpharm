@@ -11,7 +11,7 @@ Suite Teardown  Close Browser
 
 Open VetoPharm homepage
     Open VetoPharm
-    Maximize Window
+    Set Window Size  1920  1080
 
 Add a drug request with one product as unlogged user
     Add drug request as guest user

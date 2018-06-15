@@ -10,7 +10,7 @@ Library  vet_pharm.VetoPharmHomePage
 
 Open Search results page
     Open VetDoc
-    Maximize Window
+    Set Window Size  1920  1080
 
 Whether language can be switched
     Switch Between Languages

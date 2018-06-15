@@ -10,7 +10,7 @@ Suite Teardown  Close Browser
 *** Test Cases ***
 Open VetoPharm homepage
     Open VetoPharm
-    Maximize Window
+    Set Window Size  1920  1080
 
 Test if login works for correct credentials
     Login Into User Account
