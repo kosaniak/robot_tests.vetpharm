@@ -1970,6 +1970,21 @@ class VetoPharmHomePage(Page):
         self.mouse_over(element)
         return self
 
+    def close_chatbox(self):
+        """Close chat window to avoid overlapping with other elements."""
+        self.capture_page_screenshot()
+        chat_frame = self.find_elements("xpath=(//iframe[@title='chat widget'])", False)
+        if chat_frame and chat_frame[0].is_displayed():
+            self.select_frame(chat_frame[0])
+        self.capture_page_screenshot()
+        chat_box = self.find_elements("close chatbox", False)
+        if chat_box and chat_box[0].is_displayed():
+            self.mouse_over_element_in_viewport(chat_box[0])
+            self.click_element(chat_box[0])
+            self.unselect_frame()
+            self.capture_page_screenshot()
+        return self
+
 #--------------------------------------------------------------------------------------
 #  Offline Order
 #--------------------------------------------------------------------------------------
