@@ -50,7 +50,7 @@ class VetoPharmHomePage(Page):
         "add to basket": "xpath=(//li[contains(concat(' ', normalize-space(@class), ' '), ' my-basket-tbutton')])",
         "continue shopping after adding": "xpath=(//a[contains(concat(' ', normalize-space(@class), ' '), ' continue-shopping-tbutton')])",
         "add product with instructions": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' add-to-basket-tbutton')])",
-        "delete from basket": "xpath=(//i[contains(concat(' ', normalize-space(@class), ' '), ' remove-from-basket-tbutton')])",
+        "delete from basket": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' remove-from-basket-tbutton')])",
         "list of wishlists": "xpath=(//li[contains(concat(' ', normalize-space(@class), ' '), ' my-wishlist-tbutton')])",
         "wishlist view": "xpath=(//a[contains(concat(' ', normalize-space(@class), ' '), ' view-wish-list-tbutton')])",
         "product quantity": "id=id_lines-0-quantity",
@@ -112,7 +112,8 @@ class VetoPharmHomePage(Page):
         "view prices": "xpath=(//span[contains(text(),'View prices')])",
         "search filters": "xpath=(//div[@class='block_heading'])",
         "availability filter": "xpath=(//button[@class='filter-button']/span[contains(text(),'Availability')])",
-        "availiable product": "xpath=(//span[@class='item-name'][contains(text(),'Available')])",
+        "available product": "xpath=(//label[@for='Available']/..//span[contains(text(),'Available')])",
+        "available via drug request": "xpath=(//span[@class='item-name'][contains(text(),'Available (via drug request)')])",
         "unavailable product": "xpath=(//span[@class='item-name'][contains(text(),'Unavailable (drug restriction)')])",
         "prescription filter": "xpath=(//button[@class='filter-button']/span[contains(text(),'Prescription ?')])",
         "no prescription": "xpath=(//span[@class='item-name'][contains(text(),'Issuance without prescription')])",
@@ -196,13 +197,11 @@ class VetoPharmHomePage(Page):
         "prescription required": "xpath=(//span[@class='item-name'][contains(text(),'Prescription required. Dispensing is prohibited to public')])",
         "category filter": "xpath=(//button[@class='filter-button']/span[contains(text(),'Category')])",
         "veterinary drugs": "xpath=(//span[@class='item-name'][contains(text(),'Veterinary drugs')])",
-        "issuance on prescription": "xpath=(//span[@class='item-name'][contains(text(),'Issuance on prescription')])",
         "livestock health program filter": "xpath=(//button[@class='filter-button']/span[contains(text(),'Livestock Health Program (LHP)')])",
         "LHP beef production": "xpath=(//span[@class='item-name'][contains(text(),'Beef production')])",
         "out of stock filter": "xpath=(//span[@class='item-name'][contains(text(),'Unavailable (out of stock)')])",
         "drug list filter": "xpath=(//button[@class='filter-button']/span[contains(text(),'Drug list')])",
         "drug list not applicable": "xpath=(//span[@class='item-name'][contains(text(),'Not applicable')])",
-        "on prescription": "xpath=(//span[@class='item-name'][contains(text(),'Issuance on prescription')])",
         "login for drug request": "xpath=(//a[@class='btn btn-primary btn-large'])",
         "my drug requests": "xpath=(//li[contains(concat(' ', normalize-space(@class), ' '), ' my-drug-requests-tbutton')])",
         "add prescr to drug request": "xpath=(//button[@class='btn btn-default button_site_style'][contains(text(), 'OK')])",
@@ -227,10 +226,14 @@ class VetoPharmHomePage(Page):
         "delete drug request": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' delete-request-tbutton')])",
         "confirm delete drug request": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' confirm-delete-request-tbutton')])",
         "radius btn": "xpath=(//div[@class='Select-menu-outer'])",
-        "close chatbox": "xpath=(//a[@id='endChat']/span)"
+        "close chatbox": "xpath=(//a[@id='endChat']/span)",
+        "change quantity in basket": "xpath=//input[@class='product-quantity-tbutton']"
     }
 
     def open(self, *args):
+        """Open bowser in headless mode.
+        Rename this function to run a test suite locally with a visible browser.
+        """
         resolved_url = self._resolve_url(*args)
         HeadlessLib = BuiltIn().get_library_instance('HeadlessLib')
         HeadlessLib.open_headless_browser(self.browser)
@@ -268,6 +271,7 @@ class VetoPharmHomePage(Page):
         return '%s@%s.%s' % (user, host, choice(self.TLDS.split()))
 
     def gen_password(self):
+        """Generate fake password."""
         password= uuid.uuid4().hex
         return password
 
@@ -277,6 +281,7 @@ class VetoPharmHomePage(Page):
         return self
 
     def close_prev_window_tab(self):
+        """Close the previous active tab and keep the current one active."""
         handles = self._current_browser().get_window_handles()
         self.select_window(handles[0])
         self.close_window()
@@ -285,6 +290,9 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Login__into__user__account")
     def successful_login(self):
+        """Log into existing admin account with credentials, stored in sensitive_settings.py.
+        The credentials are valid for all websites.
+        """
         self.login_into_acc(sensitive_settings.email, sensitive_settings.password)
         self.body_should_contain_text('Welcome back', 
             'Login failed for user')
@@ -292,6 +300,11 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Login__into__newly__created__account")
     def successful_login_into_new_account(self):
+        """Log into just created account.
+        The credentials are stored in sensitive_settings.py.
+
+        :return: Boolean. True - if the account exists, False - if it does not.
+        """
         self.login_into_acc(sensitive_settings.register_email, sensitive_settings.register_password)
         sleep(3)
         if self._is_text_present('Welcome back'):
@@ -307,12 +320,18 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Try__to__login__with__incorrect__credentials")
     def unsuccessful_login(self):
+        """Try to log in with randomly created credentials.
+        A respective error message is expected.
+        """
         self.login_into_acc(self.email_generator(), self.gen_password())
         self.body_should_contain_text('Please enter a correct username and password. Note that both fields may be case-sensitive', 
             'No alert message about incorrect credentials')
         return self
 
     def login_into_acc(self, email, password):
+        """Enter passed email and password into respective input boxes
+        and tro to log in.
+        """
         self.click_element("login or register")
         self.type_in_box(email, "input username")
         self.type_in_box(password, "input password")
@@ -322,6 +341,9 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Logout__from__account")
     def log_out(self):
+        """Log out from account and check if an expected message is visible.
+        No credentials are needed.
+        """
         self.click_element("user account")
         self.click_element("log out")
         self.body_should_contain_text('Login or register',
@@ -330,6 +352,7 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Return__to__site")
     def back_to_website(self):
+        """Go to website from dashboard immediately after logging in."""
         self.mouse_over_element_in_viewport("back to site")
         self.wait_until_element_is_visible("back to site")
         self.click_element("back to site")
@@ -339,6 +362,9 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Try__to__register__already__taken__email")
     def taken_email_registration(self):
+        """Try to create a new account with the email of an already existing account.
+        Credentials are stored in sensitive_settings.py.
+        """
         self.register_account(sensitive_settings.email, sensitive_settings.password)
         self.body_should_contain_text('A user with that email address already exists', 
             'Successful registration for already taken email')
@@ -346,6 +372,7 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Try__to__register__the __invalid__email")
     def invalid_email_registration(self):
+        """Try to log in with wrong credentials."""
         self.register_account(self.email_generator()[:-5], self.gen_password())
         self.body_should_contain_text('Enter a valid email address',
             'Successful registration for invalid email address')
@@ -353,6 +380,8 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Use__too__short__password")
     def invalid_password_registration(self):
+        """Try to log in with an email of a wrong format.
+        """
         self.register_account(self.email_generator(), self.gen_password()[:3])
         self.body_should_contain_text('Ensure this value has at least 6 characters (it has',
             'No alert message about insecure password')
@@ -360,6 +389,8 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Unsuccessful__password__confirmation")
     def wrong_password_confirmation(self):
+        """Try to create a new account with different password and confirmation password.
+        """
         self.click_element("login or register")
         self.click_element("register")
         sleep(2)
@@ -373,6 +404,10 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Register new account")
     def register_account(self, email=None, password=None):
+        """Register a new account with special credentials, stored in sensitive_settings.py.
+        This function can be called to check registration with wrong format of credentials.
+        If credentials are valid, account will be immediately activated.
+        """
         if email == None:
             email = self.email_generator()
             password = self.gen_password()
@@ -397,6 +432,10 @@ class VetoPharmHomePage(Page):
         return password
 
     def activate_new_account(self, email, password):
+        """Activates a new account, logging into email and clicking activation link.
+        Afterwards a new tab with logged in account opens. The email tab will be closed.
+        Credentials are the same as those for account registration.
+        """
         self._current_browser().get('https://mail29.lwspanel.com/webmail/')
         sleep(5)
         if self._is_element_present("id=rcmloginuser"):
@@ -430,6 +469,7 @@ class VetoPharmHomePage(Page):
         return self
 
     def find_activation_letter(self):
+        """Find all inbox letters."""
         self.find_elements("xpath=//table[@id='messagelist']//tr")
         self.wait_until_element_is_enabled("id=mailview-top", 25)
         body = self.find_element("id=mailview-top")
@@ -438,6 +478,9 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Delete__profile")
     def delete_account(self, password):
+        """Delete current account, confirming the action with respective
+        credentials, stored in sensitive_settings.py.
+        """
         self.click_element("user account")
         self.click_element("my profile")
         self.mouse_over_element_in_viewport("edit profile")
@@ -454,11 +497,12 @@ class VetoPharmHomePage(Page):
                     "like approved drug requests, prescriptions, drug dispensings. " \
                     "During this period, your health information will remain protected " \
                     "and will not be shared or exchanged with third parties for marketing, " \
-                    "commercial or any other purposes."
+                    "commercial or any other purpose."
         self.body_should_contain_text(deletemsg, "Profile was not deleted")
         return self    
 
     def type_in_box(self, txt, search_box):
+        """Type text into a box."""
         logger.info("Typing text '%s' into text field '%s'." % (txt, search_box))
         for letter in txt:
             self.find_element(search_box).send_keys(letter)
@@ -466,6 +510,9 @@ class VetoPharmHomePage(Page):
         return self
         
     def body_should_contain_text(self, str, error_message, ignore_case=True):
+        """Check if the current page contains necessary message.
+        Otherwise, error_message is raised.
+        """
         result_msg = str.lower() if ignore_case else str
         result_msg = result_msg.encode("utf-8")
         body_txt = self.get_text("css=body").encode("utf-8").lower()
@@ -474,6 +521,7 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("switch__between__languages")
     def change_language(self):
+        """Switched from English to French and back to English and check page text."""
         self.click_element("fr language")
         self.body_should_contain_text("Tous les produits", "French was not selected")
         self.click_element("en language")
@@ -484,7 +532,8 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("select__currency")
     def change_currency(self):
-        self.select_with_search_filters()
+        """Change currency and check if a respective symbol is included in products prices."""
+        self.select_with_search_filters("available product")
         self.click_element("widgets-list")
         self.click_element("currency-widget")
         currency_widget = self.find_element("currency-widget")
@@ -502,6 +551,7 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("select__shipping__country")
     def select_country(self):
+        """Change shipping country."""
         self.click_element("shipping-widget")
         shipping_widget = self.find_element("shipping-widget")
         counrty_list = shipping_widget.find_elements_by_tag_name("li")
@@ -514,6 +564,7 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("select__prices__view")
     def view_prices(self):
+        """Change price view mode into including or excluding taxes."""
         self.click_element("view prices")
         tax_dropdown = self.find_element("tax dropdown")
         tax_list = tax_dropdown.find_elements_by_tag_name("li")
@@ -521,7 +572,7 @@ class VetoPharmHomePage(Page):
         price_view = self.get_text(selected_tax).lower()
         self.click_element(selected_tax)
         self.click_element("all products")
-        self.select_with_search_filters()
+        self.select_with_search_filters("available product")
         self.select_with_prescription_filter('no prescription')
         product = self.select_product()
         tax = product.find_element_by_tag_name("sup")
@@ -531,8 +582,12 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Add__product__to__wishlist__from__listing")
     def add_to_wishlist_from_listing(self):
+        """Randomly choose a product from a list of available products
+        that do not require a prescription and aad it to a wishlist.
+        Check if the product is included into the wishlist.
+        """
         self.click_element("all products")
-        self.select_with_search_filters()
+        self.select_with_search_filters("available product")
         self.select_with_prescription_filter('no prescription')
         product = self.select_product()
         self.mouse_over_element_in_viewport(product)
@@ -553,8 +608,11 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Add__product__to__wishlist__from__product__page")
     def add_to_wishlist_from_product_page(self):
+        """Choose a product from list, go to its page and add it to a wishlist.
+        Check if the product is included in the wishlist.
+        """
         self.click_element("all products")
-        self.select_with_search_filters()
+        self.select_with_search_filters("available product")
         self.select_with_prescription_filter('no prescription')
         pr_name = self.product_preview_page()
         print pr_name
@@ -570,9 +628,13 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Add__product__to__wishlist__from__recently__viewed")
     def add_to_wishlist_from_recently_viewed(self):
+        """View several products pages and choose one of them from
+        recently viewed products block at the last product preview page.
+        Add a product to wishlist and check if it is included in it.
+        """
         for i in range(4):
             self.click_element("all products")
-            self.select_with_search_filters()
+            self.select_with_search_filters("available product")
             self.select_with_prescription_filter('no prescription')
             self.product_preview_page()
         recently_viewed = self.find_elements("xpath=(//div[@class='owl-item active'])")
@@ -595,6 +657,7 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Update__quantity__in__whishlist")
     def update_quantity(self):
+        """Increase quantity of a product and check if it is updated."""
         self.find_element("product quantity")
         self.input_text("product quantity", '3')
         self.click_element("update quantity")
@@ -605,6 +668,7 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Delete__product__from__wishlist")
     def delete_wishlist_product(self):
+        """Remove product from a wishlist and check expected message."""
         self.click_element("delete product")
         sleep(1)
         self.click_element("remove from wishlist")
@@ -613,6 +677,7 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Create_new_wishlist")
     def create_wishlist(self):
+        """Create a new wishlist and expect a respective message."""
         self.click_element("list of wishlists")
         self.click_element("create new wishlist")
         self.input_text("wishlist name", 'For my cat')
@@ -624,14 +689,14 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Delete__the__wishlist")
     def delete_wishlist(self):
+        """Go to list of wishlists and delete the last of them."""
         wishlists = self.find_element("wishlists")
         last_wishlist = wishlists.find_elements_by_tag_name('td')[-1]
         dropdown_toggle = last_wishlist.find_element_by_tag_name("button")
         self.click_element(dropdown_toggle)
         delete_btn = last_wishlist.find_elements_by_tag_name("li")[-1]
-        if self._is_visible("close chatbox"):
-            self.click_element("close chatbox")
-        sleep(1)
+        self.close_chatbox()
+        sleep(3)
         self.click_element(delete_btn)
         self.click_element("delete wishlist")
         self.body_should_contain_text("Your 'For my cat' wish list has been deleted", '')
@@ -641,12 +706,14 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Add__product__to__basket")
     def add_to_basket_from_listing(self):
+        """Choose an available product from listing and add it to basket."""
         self.click_element("all products")
-        self.select_with_search_filters()
+        self.select_with_search_filters("available product")
         self.select_with_prescription_filter('no prescription')
         product = self.select_product()
         pr_name = self.product_name(product)
         print pr_name
+        self.close_chatbox()
         self.mouse_over_element_in_viewport(product)
         add_to_basket = product.find_element_by_xpath(".//div[@class='product-control-button']")
         sleep(2)
@@ -656,13 +723,15 @@ class VetoPharmHomePage(Page):
         sleep(5)
         self.mouse_over_element_in_viewport("add to basket")
         self.click_element_at_coordinates("add to basket", 0, 0)
+        sleep(3)
         self.body_should_contain_text(pr_name, 'Selected product was not added to basket')
         return self
 
     @robot_alias("Add__product__to__basket__from__preview")
     def add_to_basket_from_preview(self, quantity=None):
+        """Go to product preview page, change its quantity and add to basket."""
         self.click_element("all products")
-        self.select_with_search_filters()
+        self.select_with_search_filters("available product")
         self.select_with_prescription_filter('no prescription')
         pr_name = self.product_preview_page()
         if quantity:
@@ -676,13 +745,15 @@ class VetoPharmHomePage(Page):
         sleep(5)
         self.mouse_over_element_in_viewport("add to basket")
         self.click_element_at_coordinates("add to basket", 0, 0)
+        sleep(4)
         self.body_should_contain_text(pr_name, 'Selected product was not added to basket')
         return self
 
     @robot_alias("Add__product__to__basket__from__recently__viewed__products")
     def add_to_basket_from_recently_viewed(self, quantity=None):
+        """View several products and add one of them to basket from recently viewed."""
         self.click_element("all products")
-        self.select_with_search_filters()
+        self.select_with_search_filters("available product")
         self.select_with_prescription_filter('no prescription')
         pr_name = self.product_preview_page()
         print pr_name
@@ -700,6 +771,10 @@ class VetoPharmHomePage(Page):
         return self
 
     def check_veterinary_drug_label(self):
+        """Select 'read instructions' checkbox in a modal window if it is displayed and
+        add a product to basket (in case a prescription is required for the product).
+        Otherwise, click 'continue shopping' button.
+        """
         self.wait_until_element_is_visible("id=add-to-basket-modal", 50)
         checkbox = self.find_elements("id=id_read_instructions", False)
         if len(checkbox) != 0 and checkbox[-1].is_displayed() != False:
@@ -713,6 +788,7 @@ class VetoPharmHomePage(Page):
         return self
 
     def product_preview_page(self, no_LHP_label=None):
+        """Go to the page of a product without lHP label."""
         product = self.select_product(no_LHP_label=no_LHP_label)
         pr_name = self.product_name(product)
         link = product.find_element_by_xpath(".//a[@class='product_link']/div")
@@ -723,6 +799,10 @@ class VetoPharmHomePage(Page):
         return pr_name
 
     def select_product(self, no_LHP_label=None):
+        """If no_LHP_label is True, filter out products without this label
+        and randomly choose a product of that list.
+        Otherwise, randomly choice a product of all products.
+        """
         products_list = self.find_element("list of products")
         products = products_list.find_elements_by_tag_name("article")
         if no_LHP_label:
@@ -732,18 +812,26 @@ class VetoPharmHomePage(Page):
             product = choice(products)
         return product
 
-    def select_with_search_filters(self):
+    def select_with_search_filters(self, subavailable_filter):
+        """Search products with availability filter and its passed subfilter.
+
+        :param subavailable_filter: subtype of 'available' filter locator.
+        """
         self.wait_until_element_is_visible("search filters")
         if self._is_visible("id=cookieAgree"):
             self.click_element("id=cookieAgree")
         self.click_element_at_coordinates("search filters", 0, 0)
         sleep(2)
         self.click_element("availability filter")
-        self.click_element("availiable product")
+        self.click_element(subavailable_filter)
         sleep(1)
         return self
 
     def select_with_prescription_filter(self, prescription_type):
+        """Add prescription filter of the prescription_type.
+
+        :param prescription_type: Prescription filter locator.
+        """
         if self._is_visible("id=cookieAgree"):
             self.click_element("id=cookieAgree")
         self.click_element_at_coordinates("search filters", 0, 0)
@@ -756,6 +844,7 @@ class VetoPharmHomePage(Page):
         return self
 
     def select_with_LHP_filter(self):
+        """Add LHP (livestock health program) program and choose its subtype."""
         if self._is_visible("id=cookieAgree"):
             self.click_element("id=cookieAgree")
         self.click_element_at_coordinates("search filters", 0, 0)
@@ -766,25 +855,36 @@ class VetoPharmHomePage(Page):
         return self
 
     def product_name(self, product_locator):
+        """Get product name.
+
+        :param product_locator: Locator of the chosen product.
+
+        :return: String. Product title.
+        """
         pr_name = product_locator.find_element_by_tag_name('h3')
         product_name = self.get_text(pr_name)
         return product_name
 
     @robot_alias("Remove__product__from__basket")
     def delete_product(self):
+        """Remove the last product from a basket."""
         self.click_element("delete from basket")
         sleep(5)
-        self.body_should_contain_text('Your basket is empty.', 'Selected product was not deleted from basket')
+        self.body_should_contain_text('YOUR BASKET IS EMPTY', 'Selected product was not deleted from basket')
         return self
 
     @robot_alias("Write_a_review_and_evaluate_product")
     def write_product_review(self):
+        """Choose a product and go its preview page.
+        Rate a product (choses stars), leave a review and submit it.
+        Compare reviews before and after. Expect a notification on review submission.
+        """
         self.click_element("all products")
-        self.select_with_search_filters()
+        self.select_with_search_filters("available product")
         pr_name = self.product_preview_page()
         while self._is_element_present("write a review button") != True:
             self.click_element("all products")
-            self.select_with_search_filters()
+            self.select_with_search_filters("available product")
             pr_name = self.product_preview_page()
         reviews = self.find_element("all reviews before")
         reviews_before = self.get_text(reviews)
@@ -805,6 +905,10 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Edit_a_review")
     def edit_review(self):
+        """Change product rate and compare it with the previous one.
+        Update review message and save editing changes. Verify if review has
+        been successfully edited.
+        """
         self.focus('id=edit_review')
         self.click_element('id=edit_review')
         star = self.find_element("xpath=(//*[@id='edit_review_form']/div[1]/div/input)")
@@ -826,6 +930,9 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Delete_a_review")
     def delete_review(self):
+        """Go to dashboard reviews list. Find user's reviews and delete the last one.
+        Go back to website.
+        """
         self.click_element('user account')
         self.click_element('dashboard')
         self.click_element('dashboard content')
@@ -842,6 +949,7 @@ class VetoPharmHomePage(Page):
         return self
 
     def verify_successful_editing(self):
+        """Find product reviews at its page, get their text and compare with the exp3ected message."""
         self.mouse_over_element_in_viewport("xpath=(//*[@id='product-reviews']/div/h2)")
         self.click_element_at_coordinates("xpath=(//*[@id='product-reviews']/div/h2)", 0, 0)
         sleep(2)
@@ -851,7 +959,11 @@ class VetoPharmHomePage(Page):
         return self
 
     def product_rating(self, edit=None):
-        if edit == True:
+        """Choose rating star.
+
+        :param edit: Boolean. If True, rating is edited.
+        """
+        if edit:
             star_box = self.find_element("rating stars box editing")
         else:
             star_box = self.find_element("rating stars box")
@@ -867,6 +979,9 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Add__an__animal")
     def add_animal(self):
+        """Go to list of animals, fill out animal info, answer related questions and save the animal.
+        Check if athe animal is in the animal list.
+        """
         self.click_element("health center")
         self.click_element("animals")
         self.click_element("add animal")
@@ -889,6 +1004,9 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Create__a__group")
     def create_group(self):
+        """Create a group of animals, filling out all related info.
+        Check if it is enlisted in my groups block.
+        """
         self.click_element("xpath=(//a[contains(text(),'My groups')])")
         self.click_element("xpath=(//a[@class='btn btn-lg btn-info add-group-button button_site_style'])")
         self.type_in_box('Quintagroup', 'id=id_name')
@@ -908,6 +1026,7 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Delete__the__group")
     def delete_group(self):
+        """Delete a group by name and check if it is no more included in the list."""
         self.click_element("xpath=(//a[contains(text(),'Quintagroup')])")
         self.click_element("xpath=(//div[@class='delete-group']//i[@class='fa fa-times'])")
         self.is_visible("xpath=(//button[@class='btn btn-danger'])")
@@ -919,6 +1038,7 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Delete__the__animal")
     def delete_animal(self):
+        """Delete an animal by name and check it is no more enlisted."""
         self.click_element("xpath=(//span[contains(text(),'Ivanka')])")
         self.click_element("xpath=(//*[@id='profile']/div/div/a)")
         sleep(5)
@@ -930,6 +1050,13 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Add__the__prescription")
     def add_prescription(self, product_name=None):
+        """Add prescription: fill out related info, add necessary product(s).
+        Try to save a prescription without adding a scan of it, expect an error message.
+        Add a photo and save the prescription.
+
+        :param product_name: List or String. If list, multiple products are added,
+        calling add_multiple_product_prescription. If string, single product is added.
+        """
         self.click_element("health center")
         self.click_element("my prescriptions")
         self.click_element("add prescription")
@@ -963,6 +1090,10 @@ class VetoPharmHomePage(Page):
         return self
 
     def add_multiple_product_prescription(self, products_list):
+        """Add products to prescription from list.
+
+        :param products_list: List. Products that should be included into the list.
+        """
         self.search_product(products_list[0])
         for item in products_list[1:]:
                 self.mouse_over_element_in_viewport("add products left")
@@ -971,6 +1102,10 @@ class VetoPharmHomePage(Page):
         return self
 
     def search_product(self, item):
+        """Search for a product to add it to prescription.
+
+        :param item: String. Product title.
+        """
         sleep(4)
         self.wait_until_element_is_visible("search field")
         self.input_text("search field", item.lower().split()[0])
@@ -979,6 +1114,15 @@ class VetoPharmHomePage(Page):
         return self
 
     def check_pages(self, add_btn, list_of_items, product_name):
+        """Check each item in products list if it contains necessary product title.
+        If no item contains the title, the next page is checked.
+
+        :param add_btn: Locator. A button to add a product.
+        :param list_of_items: List. List of items on a page that contain product titles.
+        :param product_name: String. Searched product title.
+
+        :return: Element. Button to add chosen product.
+        """
         for i in list_of_items:
             self.mouse_over_element_in_viewport(i)
             txt = self.get_text(i)
@@ -992,6 +1136,14 @@ class VetoPharmHomePage(Page):
         return item
 
     def fill_in_prescription_form(self, add_btn, items, param, close_btn=None, product_name=None):
+        """Enter necessary information for any of prescription points.
+
+        :param add_btn: Locator. A button to add necessary element.
+        :param items: Locator. A block with all available items (for ex., a list of animals).
+        :param param: Locator. A common locator for all available items (for ex., an animal in a list of them).
+        :param close_btn: Locator. If necessary, a button to close a window where an item is chosen.
+        :param product_name: String. A product title if a product is searched.
+        """
         self.wait_until_element_is_visible(add_btn)
         self.mouse_over(add_btn)
         sleep(2)
@@ -1066,6 +1218,9 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Redirect_to_purchase_from_bovi-pharm")
     def redirect_from_bovi_pharm(self):
+        """Go to bovi-pharm website, filter drug request product, choose one,
+        got to product page, click redirect link, close previous (bovi) tab and add the product to wishlist.
+        """
         self._current_browser().get('https://bovi-pharm.devel.vetopharm.quintagroup.com/en-gb/')
         self.click_element("all products")
         self.wait_until_element_is_visible("search filters")
@@ -1111,7 +1266,12 @@ class VetoPharmHomePage(Page):
         self.body_should_contain_text(pr_name, 'Selected product was not added to wishlist')
         return self
 
-    def choose_checkout_user(self, checkout_role, email=None, password=None):
+    def choose_checkout_user(self, checkout_role):
+        """Proceed to checkout, choose user role, enter necessary data.
+
+        :param checkout_role: String. Possible values 'checkout guest', 'checkout with account',
+        'checkout with a new account'.
+        """
         self.click_element("proceed to checkout button")
         self.click_element(checkout_role)
         if checkout_role == "checkout with account":
@@ -1123,6 +1283,12 @@ class VetoPharmHomePage(Page):
         return self
 
     def add_checkout_address(self, names=None, city=None):
+        """Fill out shipping or billing address information.
+        'geneva' - to check price excluding vat.
+
+        :param names: String. Necessary for entering shipping address.
+        :param city: String. Necessary for both shipping and billing addresses.
+        """
         self.wait_until_element_is_visible("new checkout address", 20)
         self.mouse_over_element_in_viewport("new checkout address")
         self.click_element_at_coordinates("new checkout address", 0, 0)
@@ -1146,7 +1312,7 @@ class VetoPharmHomePage(Page):
             self.type_in_box('Avenue Anatole',"id=id_line1")
             self.mouse_over_element_in_viewport("id=id_postcode")
             self.type_in_box('75007',"id=id_postcode")
-        if names == True:
+        if names:
             self.mouse_over_element_in_viewport("id=id_first_name")
             self.type_in_box(self.gen_name(6),"id=id_first_name")
             self.type_in_box(self.gen_name(10),"id=id_last_name")
@@ -1157,6 +1323,7 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Checkout_as_guest_with_payment_during_pickup")
     def checkout_as_guest_pickup_payment(self):
+        """Checkout as guest with 'flex delivery service', 'during pickup payment'."""
         self.choose_checkout_user("checkout guest")
         self.add_checkout_address(names=True, city='les gets')
         self.wait_until_element_is_visible("xpath=(//h2[contains(text(), 'Select your billing address')])")
@@ -1175,6 +1342,7 @@ class VetoPharmHomePage(Page):
     @robot_alias("Proceed_to_checkout_and_create_account")
     @account_cleanup
     def checkout_and_create_account(self):
+        """Checkout witha new account with 'pick up at the pharmacy' and 'bank transfer'."""
         self.choose_checkout_user("checkout with a new account")
         self.current_frame_contains('Create your account and then you will be redirected back to the checkout process')
         self.register_account(sensitive_settings.register_email)
@@ -1197,6 +1365,8 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Proceed_to_checkout_as_logged_in_user")
     def checkout_as_logged_in_user(self):
+        """Checkout with existing account as a company, choosing available shipping a nd billing addresses,
+        with 'business parcel delivery', 'pay with paypal'. Log out."""
         self.choose_checkout_user("checkout with account")
         self.click_element("checkout company")
         self.click_element("proceed company checkout")
@@ -1233,6 +1403,9 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Proceed_to_checkout_excluding_vat")
     def checkout_exluding_vat(self):
+        """Checkout as guest with 'geneva' address within excluding vat zone, with 'Livraison domicile (Suisse)',
+        'bank cheque' payment. Check final order, comparing total and excluding vat values.
+        """
         self.choose_checkout_user("checkout guest")
         self.add_checkout_address(names=True, city='geneva')
         self.wait_until_element_is_visible("xpath=(//h2[contains(text(), 'Select your billing address')])")
@@ -1324,10 +1497,10 @@ class VetoPharmHomePage(Page):
         self.search_filter_labels("category filter", 'veterinary drugs', locator)
         return self
 
-    @robot_alias("Verify_issuance_on_prescription_label")
-    def issuance_on_prescription_label(self):
+    @robot_alias("Verify_prescription_required_label")
+    def prescription_required_label(self):
         locator = ("xpath=(//span[@class='sur-ordonnance availability-label'])")
-        self.search_filter_labels("prescription filter", 'issuance on prescription', locator)
+        self.search_filter_labels("availability filter", 'available via drug request', locator)
         return self
 
     @robot_alias("Verify_livestock_health_program_filter")
@@ -1375,8 +1548,7 @@ class VetoPharmHomePage(Page):
 
     def add_to_drug_request_from_product_page(self):
         self.click_element("all products")
-        self.select_with_search_filters()
-        self.select_with_prescription_filter('on prescription')
+        self.select_with_search_filters("available via drug request")
         self.select_with_LHP_filter()
         prod_name = self.product_preview_page()
         self.wait_until_element_is_visible("xpath=(//a[contains(text(), 'Online request')])")
@@ -1394,8 +1566,7 @@ class VetoPharmHomePage(Page):
 
     def add_to_drug_request_from_listing(self):
         self.click_element("all products")
-        self.select_with_search_filters()
-        self.select_with_prescription_filter('on prescription')
+        self.select_with_search_filters("available via drug request")
         product = self.select_product(True)
         pr_name = self.product_name(product)
         self.mouse_over_element_in_viewport(product)
@@ -1408,10 +1579,13 @@ class VetoPharmHomePage(Page):
         self.click_element("id=id_read_instructions")
         self.click_element("xpath=(//*[@id='add-to-drug-reques-modal']/div/div/div[3]/form/button)")
         sleep(3)
-        self.body_should_contain_text(pr_name, 'Selected product was not added to wishlist')
+        self.body_should_contain_text('Product was successfully added to drug request',
+                'Selected product was not added to wishlist')
         return pr_name
 
     def add_prescr_to_drug_request(self, prod_name):
+        """Choose a prescription from a modal window."""
+        self.close_chatbox()
         self.click_element("xpath=(//span[contains(text(),'Add prescription')])")
         self.focus("xpath=(//div[@class='modal-dialog'])")
         prescr_list = self.find_elements("xpath=(//div[@class='prescr_block border_block'])")
@@ -1446,6 +1620,7 @@ class VetoPharmHomePage(Page):
         self.click_element("my drug requests")
         sleep(1)
         self.click_element("list of drug requests")
+        self.close_chatbox()
         self.click_element("drug request link")
         sleep(2)
         return self
@@ -1482,9 +1657,9 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Add_drug_request_as_guest_user")
     def add_drug_request_with_one_product(self):
+        """Add a drug request with one product, add prescription, close notification window."""
         self.click_element("all products")
-        self.select_with_search_filters()
-        self.select_with_prescription_filter('on prescription')
+        self.select_with_search_filters("available via drug request")
         product = self.select_product()
         pr_name = self.product_name(product)
         print pr_name
@@ -1520,6 +1695,9 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Add_comments_to_drug_request_and_check_rejected_status")
     def add_comments_and_reject(self):
+        """Edit drug request from dashboard, set 'rejected' status, add comments to drug request and its product,
+        set 'approved' status, check updated status.
+        """
         self.drug_request_editing_page()
         sleep(3)
         self.set_drug_request_status("reject drug request")
@@ -1539,6 +1717,9 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Write_comments_and_set_quantity_limitation")
     def write_comments_and_set_quantity(self):
+        """View drug requests from website, check comments, previously added at dashboard,
+        move products from the approved drug request to basket, set quantity and expect an error message.
+        """
         self.go_to_drug_requests_from_dashboard()
         self.body_should_contain_text("Status: your drug request is approved, you can move products to basket.",
             "The status has been not changed")
@@ -1549,20 +1730,22 @@ class VetoPharmHomePage(Page):
         sleep(4)
         self.wait_until_element_is_visible("xpath=(//a[@class='btn btn-primary button_site_style'])")
         self.click_element("xpath=(//a[@class='btn btn-primary button_site_style'])")
-        self.wait_until_element_is_visible("id=id_form-0-quantity", 30)
-        self.input_text("id=id_form-0-quantity", '50')
-        self.click_element("update quantity in basket")
-        sleep(2)
-        self.wait_until_element_is_visible("xpath=(//span[@class='error-block'])", 30)
-        self.element_should_be_visible("xpath=(//span[@class='error-block'])")
-        sleep(2)
-        self.input_text("id=id_form-0-quantity", '1')
-        self.click_element("update quantity in basket")
+        self.wait_until_element_is_visible("change quantity in basket", 30)
+        change_quantity = self.find_elements("change quantity in basket")
+        change_quantity[0].send_keys('50')
+        sleep(1)
+        self.element_should_be_visible("xpath=(//div[@class='notification notification-error'])")
         sleep(2)
         return self
 
     @robot_alias("Add_a_drug_request_as_logged_in_user")
     def add_drug_request_with_many_products(self):
+        """Add a drug request as a logged in user with many products.
+        Create a prescription with selected products, add it to prescription.
+        save drug request, close modal window, view added drug request.
+
+        :return: List. added to drug request products.
+        """
         all_prods = []
         for i in range(2):
             prod_name = self.add_to_drug_request_from_listing()
@@ -1609,6 +1792,9 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Edit_created_drug_request")
     def edit_drug_request(self, all_prods):
+        """Edit drug request at dashboard, remove a product, change product quantity, save changes.
+        View drug request from website and check if changes have been saved.
+        """
         self.click_element("edit drug request")
         sleep(3)
         el = self.find_elements("xpath=(//div[@class='drug-request-product'])")[0]
@@ -1627,9 +1813,12 @@ class VetoPharmHomePage(Page):
         print all_prods
         list_update = '\n'.join(all_prods)
         self.wait_until_element_is_visible("xpath=(//div[@class='modal-body'])", 60)
+        modal_header = self.find_elements("xpath=(//div[@class='modal-header'])")
+        self.focus(modal_header[0])
         self.wait_until_element_is_visible("xpath=(//button[@class='close-modal']/span)", 30)
+        self.wait_until_element_is_visible("xpath=(//button[@class='close-modal']/span)")
         self.click_element("xpath=(//button[@class='close-modal']/span)")
-        sleep(4)
+        sleep(6)
         self.click_element("list of drug requests")
         sleep(4)
         self.view_drug_request_from_website(list_update)
@@ -1671,6 +1860,7 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Proceed_to_checkout_with_shipping_method_limitation")
     def checkout_pickup_at_pharmacy_only(self):
+        """Check if only one shipping method ia available - during pickup payment."""
         self.click_element("proceed to checkout button")
         self.mouse_over_element_in_viewport("proceed in checkout")
         self.click_element_at_coordinates("proceed in checkout", 0, 0)
@@ -1715,6 +1905,9 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Proceed_to_checkout_with_paybox_payment")
     def checkout_with_paybox_payment(self):
+        """Checkout with shiiping and billing addresses 'Berlin' with 'home delivery(Ger, Bel, Lux)'
+        and paybox payment.
+        """
         self.click_element("proceed to checkout button")
         self.element_should_be_visible("xpath=(//div[@class='alert alert-warning text-center'])",
             "Prescription should be required")
@@ -1742,6 +1935,7 @@ class VetoPharmHomePage(Page):
         return self
 
     def pay_with_paybox(self):
+        """Enter test data to pay with paybox."""
         self.wait_until_element_is_visible("id=id_number")
         self.type_in_box('1111222233334444', "id=id_number")
         self.click_element('id=id_expiry_month_1')
@@ -1766,6 +1960,7 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("Scroll_to_element")
     def mouse_over_element_in_viewport(self, locator):
+        """Use this keyword when an element is out of viewpost instead of mouse_over."""
         if isinstance(locator, str):
             element = self.find_element(locator)
         else:
@@ -1773,6 +1968,21 @@ class VetoPharmHomePage(Page):
         self.driver.execute_script('return arguments[0].scrollIntoView();', element)
         self.wait_until_element_is_visible(element)
         self.mouse_over(element)
+        return self
+
+    def close_chatbox(self):
+        """Close chat window to avoid overlapping with other elements."""
+        self.capture_page_screenshot()
+        chat_frame = self.find_elements("xpath=(//iframe[@title='chat widget'])", False)
+        if chat_frame and chat_frame[0].is_displayed():
+            self.select_frame(chat_frame[0])
+        self.capture_page_screenshot()
+        chat_box = self.find_elements("close chatbox", False)
+        if chat_box and chat_box[0].is_displayed():
+            self.mouse_over_element_in_viewport(chat_box[0])
+            self.click_element(chat_box[0])
+            self.unselect_frame()
+            self.capture_page_screenshot()
         return self
 
 #--------------------------------------------------------------------------------------
