@@ -50,7 +50,7 @@ class VetoPharmHomePage(Page):
         "add to basket": "xpath=(//li[contains(concat(' ', normalize-space(@class), ' '), ' my-basket-tbutton')])",
         "continue shopping after adding": "xpath=(//a[contains(concat(' ', normalize-space(@class), ' '), ' continue-shopping-tbutton')])",
         "add product with instructions": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' add-to-basket-tbutton')])",
-        "delete from basket": "xpath=(//i[contains(concat(' ', normalize-space(@class), ' '), ' remove-from-basket-tbutton')])",
+        "delete from basket": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' remove-from-basket-tbutton')])",
         "list of wishlists": "xpath=(//li[contains(concat(' ', normalize-space(@class), ' '), ' my-wishlist-tbutton')])",
         "wishlist view": "xpath=(//a[contains(concat(' ', normalize-space(@class), ' '), ' view-wish-list-tbutton')])",
         "product quantity": "id=id_lines-0-quantity",
@@ -112,7 +112,8 @@ class VetoPharmHomePage(Page):
         "view prices": "xpath=(//span[contains(text(),'View prices')])",
         "search filters": "xpath=(//div[@class='block_heading'])",
         "availability filter": "xpath=(//button[@class='filter-button']/span[contains(text(),'Availability')])",
-        "availiable product": "xpath=(//span[@class='item-name'][contains(text(),'Available')])",
+        "available product": "xpath=(//label[@for='Available']/..//span[contains(text(),'Available')])",
+        "available via drug request": "xpath=(//span[@class='item-name'][contains(text(),'Available (via drug request)')])",
         "unavailable product": "xpath=(//span[@class='item-name'][contains(text(),'Unavailable (drug restriction)')])",
         "prescription filter": "xpath=(//button[@class='filter-button']/span[contains(text(),'Prescription ?')])",
         "no prescription": "xpath=(//span[@class='item-name'][contains(text(),'Issuance without prescription')])",
@@ -196,13 +197,11 @@ class VetoPharmHomePage(Page):
         "prescription required": "xpath=(//span[@class='item-name'][contains(text(),'Prescription required. Dispensing is prohibited to public')])",
         "category filter": "xpath=(//button[@class='filter-button']/span[contains(text(),'Category')])",
         "veterinary drugs": "xpath=(//span[@class='item-name'][contains(text(),'Veterinary drugs')])",
-        "issuance on prescription": "xpath=(//span[@class='item-name'][contains(text(),'Issuance on prescription')])",
         "livestock health program filter": "xpath=(//button[@class='filter-button']/span[contains(text(),'Livestock Health Program (LHP)')])",
         "LHP beef production": "xpath=(//span[@class='item-name'][contains(text(),'Beef production')])",
         "out of stock filter": "xpath=(//span[@class='item-name'][contains(text(),'Unavailable (out of stock)')])",
         "drug list filter": "xpath=(//button[@class='filter-button']/span[contains(text(),'Drug list')])",
         "drug list not applicable": "xpath=(//span[@class='item-name'][contains(text(),'Not applicable')])",
-        "on prescription": "xpath=(//span[@class='item-name'][contains(text(),'Issuance on prescription')])",
         "login for drug request": "xpath=(//a[@class='btn btn-primary btn-large'])",
         "my drug requests": "xpath=(//li[contains(concat(' ', normalize-space(@class), ' '), ' my-drug-requests-tbutton')])",
         "add prescr to drug request": "xpath=(//button[@class='btn btn-default button_site_style'][contains(text(), 'OK')])",
@@ -227,7 +226,8 @@ class VetoPharmHomePage(Page):
         "delete drug request": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' delete-request-tbutton')])",
         "confirm delete drug request": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' confirm-delete-request-tbutton')])",
         "radius btn": "xpath=(//div[@class='Select-menu-outer'])",
-        "close chatbox": "xpath=(//a[@id='endChat']/span)"
+        "close chatbox": "xpath=(//a[@id='endChat']/span)",
+        "change quantity in basket": "xpath=//input[@class='product-quantity-tbutton']"
     }
 
     def open(self, *args):
