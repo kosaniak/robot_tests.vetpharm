@@ -3,6 +3,7 @@ Documentation  Tests for http://vet-directory.devel.vetopharm.quintagroup.com/en
 
 Resource  keywords.robot
 Library  vet_pharm.VetoPharmHomePage
+Library  ../headless/HeadlessLib.py  vet_pharm.VetoPharmHomePage
 Variables  ../vetpharm/sensitive_settings.py
 
 Suite Teardown  Close Browser
