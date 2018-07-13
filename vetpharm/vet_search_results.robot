@@ -5,7 +5,7 @@ Library  vet_pharm.py
 Library  vet_pharm.VetoPharmHomePage
 Library  ../headless/HeadlessLib.py  vet_pharm.VetoPharmHomePage
 
-# Suite Teardown  Close Browser
+Suite Teardown  Close Browser
 
 *** Test Cases ***
 
