@@ -15,7 +15,16 @@ Open VetoPharm homepage
 
 Test if login works for correct credentials
     Login Into User Account
-    Return To Site
+
+Find a vet
+    Find A Vet
+    Find A Vet With Advanced Research
+
+Add a vet
+    Add Found Vet
+
+Delete the vet
+    Delete Added Vet From Health Center
     Logout From Account
 
 Test inability to login with incorrect credentials

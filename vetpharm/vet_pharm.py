@@ -227,7 +227,20 @@ class VetoPharmHomePage(Page):
         "confirm delete drug request": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' confirm-delete-request-tbutton')])",
         "radius btn": "xpath=(//div[@class='Select-menu-outer'])",
         "close chatbox": "xpath=(//a[@id='endChat']/span)",
-        "change quantity in basket": "xpath=//input[@class='product-quantity-tbutton']"
+        "change quantity in basket": "xpath=//input[@class='product-quantity-tbutton']",
+        "my veterinarians": "xpath=(//a[@href='/en-gb/health_centre/veterinarians/'][contains(text(),'My veterinarians')])",
+        "add a vet": "xpath=(//a[@class='btn add_new_button add_vet_btn'])",
+        "search vet box": "id=id_vet_name",
+        "search vet button": "xpath=(//button[@class='btn'])",
+        "found vets": "xpath=(//span[@class='vet-details']/strong/a)",
+        "advanced search button": "xpath=(//button[@type='button'][contains(text(), 'Advanced search')])",
+        "city input box": "//*[@id='vet_add_form']/div/form/div/div[2]/div[3]/input",
+        "phone input box": "//*[@id='vet_add_form']/div/form/div/div[2]/div[4]/input",
+        "add vet button": "xpath=(//a[@href='/en-gb/health_centre/veterinarian/267492/add'])",
+        "my added vets": "xpath=(.//*[@id='filter-wrapper']/ul/li[3]/a)",
+        "added vet ivan": "xpath=(.//*[@id='column-wrapper']/div/div[2]/ul/li/div[1]/div[1]/div[2])",
+        "view vet profile": "xpath=(//a[contains(text(),'View profile')])",
+        "delete vet button": "xpath=(.//*[@id='column-wrapper']/div/div[2]/ul/li/div[2]/a[2])"
     }
 
     def open(self, *args):
@@ -2284,4 +2297,45 @@ class VetoPharmHomePage(Page):
                                 "Vet %s was not deleted" % added_vet_name)
         self.page_should_not_contain_element("xpath=//li[@class='vet_item']//strong[contains(text(), 'Dr. "+added_vet_name+"')]",
                                             "Vet %s was not deleted" % added_vet_name)
+        return self
+
+    @robot_alias("find_a_vet")
+    def find_vet(self):
+       self.click_element("health center")
+       self.click_element("my veterinarians")
+       self.click_element("add a vet")
+       self.input_text("search vet box", "Ivan")
+       self.click_element("search vet button")
+       found_vets= self.find_elements("found vets")
+       vets = [vet.text for vet in found_vets]
+       print vets
+       for vet in vets:
+           if not "ivan" in vet.lower().split()[0]:
+               BuiltIn().fail("This is not Ivan: " + vet)
+       return self
+
+    @robot_alias("find_a_vet_with_advanced_research")
+    def find_vet_advanced_research(self):
+        self.click_element( "advanced search button")
+        self.input_text("city input box", "PEYREHORADE")
+        self.input_text("phone input box", "05587304")
+        self.click_element("search vet button")
+        sleep(5)
+        return self
+
+    @robot_alias("add_found_vet")
+    def add_a_vet(self):
+        self.click_element("add vet button")
+        self.click_element("my added vets")
+        self.body_should_contain_text("Ivan VILLAFRANCA", "Vet Ivan was not added")
+        self.click_element("added vet ivan")
+        sleep(2)
+        self.mouse_over_element_in_viewport("view vet profile")
+        return self
+
+    @robot_alias("delete_added_vet_from_health_center")
+    def delete_a_vet(self):
+        self.click_element("delete vet button")
+        sleep(5)
+        self.body_should_contain_text("You don't have any veterinarians added yet.", "Vet Ivan was not deleted")
         return self
