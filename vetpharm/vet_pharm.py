@@ -34,7 +34,10 @@ class VetoPharmHomePage(Page):
     # keys to Selenium2Library actions instead of the locator
     # strings.
     selectors = {
-        "login or register": "id=login_link",
+        "menu": "xpath=(//div[@class='header-button megamenu-button'])",
+        "login or register": "xpath=(//a[@href='/en-gb/accounts/login/'])",
+        "account": "xpath=(//a[@href='/en-gb/accounts/'])",
+        "close": "xpath=(//a[@class='close'])",
         "input username": "id=id_login-username",
         "input password": "id=id_login-password",
         "register": "xpath=(//span[contains(text(),'Register')])",
@@ -44,7 +47,7 @@ class VetoPharmHomePage(Page):
         "login submit": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' log-in-tbutton')])",
         "registration submit": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), 'register-tbutton')])",
         "back to site": "xpath=(//i[@class='icon-home'])",
-        "log out": "id=logout_link",
+        "log out": "xpath=(//a[@href='/en-gb/accounts/logout/'])",
         "all products": "xpath=(//a[contains(text(),'All products')])",
         "list of products": "xpath=(//div[@class='row product-list'])",
         "add to basket": "xpath=(//li[contains(concat(' ', normalize-space(@class), ' '), ' my-basket-tbutton')])",
@@ -63,7 +66,7 @@ class VetoPharmHomePage(Page):
         "save wishlist": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' save-wishlist-tbutton')])",
         "wishlists": "xpath=(//table[@class='table table-bordered '])",
         "delete wishlist": "xpath=(//button[contains(concat(' ', normalize-space(@class), ' '), ' confirm-remove-from-wishlist-tbutton')])",
-        "health center": "xpath=(//div[@class='health_centre health-centre-nav-menu'])",
+        "health center": "xpath=(//a[@href='/en-gb/health_centre/']/span[contains(text(),'Health of my animals')])",
         "animals": "xpath=(//a[@href='/en-gb/health_centre/animals/'])",
         "add animal": "xpath=(//a[@href='/en-gb/health_centre/animal/create'])",
         "species": "xpath=(//span[@class='select2-arrow'])",
@@ -102,7 +105,7 @@ class VetoPharmHomePage(Page):
         "currency logo": "xpath=(//a[@class='dropdown-toggle']//i[@class='curr_logo'])",
         "selected currency": "xpath=(//div[@class='product_price']//i[@class='curr_logo'])",
         "user account": "xpath=(//div[@class='user-account'])",
-        "my profile": "xpath=(//a[contains(text(),'My profile')])",
+        "my profile": "xpath=(//a[contains(text(),'Profile')])",
         "edit profile": "xpath=(//a[@class='btn button_color_border edit_prof_btn'])",
         "delete profile": "id=delete_profile",
         "account pasword": "id=id_password",
@@ -228,7 +231,8 @@ class VetoPharmHomePage(Page):
         "radius btn": "xpath=(//div[@class='Select-menu-outer'])",
         "close chatbox": "xpath=(//a[@id='endChat']/span)",
         "change quantity in basket": "xpath=//input[@class='product-quantity-tbutton']",
-        "my veterinarians": "xpath=(//a[@href='/en-gb/health_centre/veterinarians/'][contains(text(),'My veterinarians')])",
+        "my veterinarians": "xpath=(//li[@class='my_vets_link']//a[@href='/en-gb/health_centre/veterinarians/'][contains(text(),'My veterinarians')])",
+        "veterinarians": "xpath=(//a[@href='/en-gb/health_centre/veterinarians/'][@class='vets-link-tbutton'])",
         "add a vet": "xpath=(//a[@class='btn add_new_button add_vet_btn'])",
         "search vet box": "id=id_vet_name",
         "search vet button": "xpath=(//button[@class='btn'])",
@@ -236,11 +240,12 @@ class VetoPharmHomePage(Page):
         "advanced search button": "xpath=(//button[@type='button'][contains(text(), 'Advanced search')])",
         "city input box": "//*[@id='vet_add_form']/div/form/div/div[2]/div[3]/input",
         "phone input box": "//*[@id='vet_add_form']/div/form/div/div[2]/div[4]/input",
-        "add vet button": "xpath=(//a[@href='/en-gb/health_centre/veterinarian/267492/add'])",
+        "add vet button": "xpath=(//a[@href='/en-gb/health_centre/veterinarian/267492/add']//i[@class='fa fa-plus'])",
         "my added vets": "xpath=(.//*[@id='filter-wrapper']/ul/li[3]/a)",
         "added vet ivan": "xpath=(.//*[@id='column-wrapper']/div/div[2]/ul/li/div[1]/div[1]/div[2])",
-        "view vet profile": "xpath=(//a[contains(text(),'View profile')])",
-        "delete vet button": "xpath=(.//*[@id='column-wrapper']/div/div[2]/ul/li/div[2]/a[2])"
+        "added ivan": "xpath=//div[@class='vet_head_info']//strong[contains(text(), 'Dr. Ivan VILLAFRANCA')]",
+        "view vet profile": "xpath=(//a[@href='/search/veterinarian/267492/'][@class='btn link_site_style'])",
+        "delete vet button": "xpath=(//a[@href='/en-gb/health_centre/veterinarian/163/remove'][@class='btn'])"
     }
 
     def open(self, *args):
@@ -345,11 +350,11 @@ class VetoPharmHomePage(Page):
         """Enter passed email and password into respective input boxes
         and tro to log in.
         """
+        self.click_element("menu")
         self.click_element("login or register")
         self.type_in_box(email, "input username")
         self.type_in_box(password, "input password")
         self.click_button("login submit")
-        sleep(4)
         return self
 
     @robot_alias("Logout__from__account")
@@ -357,10 +362,11 @@ class VetoPharmHomePage(Page):
         """Log out from account and check if an expected message is visible.
         No credentials are needed.
         """
-        self.click_element("user account")
+        self.click_element("menu")
         self.click_element("log out")
-        self.body_should_contain_text('Login or register',
-            'Logout failed')
+        self.click_element("menu")
+        self.page_should_contain_element("login or register", 'Logout failed')
+        self.click_element("menu")
         return self
 
     @robot_alias("Return__to__site")
@@ -383,7 +389,7 @@ class VetoPharmHomePage(Page):
             'Successful registration for already taken email')
         return self
 
-    @robot_alias("Try__to__register__the __invalid__email")
+    @robot_alias("Try__to__register__the__invalid__email")
     def invalid_email_registration(self):
         """Try to log in with wrong credentials."""
         self.register_account(self.email_generator()[:-5], self.gen_password())
@@ -404,7 +410,6 @@ class VetoPharmHomePage(Page):
     def wrong_password_confirmation(self):
         """Try to create a new account with different password and confirmation password.
         """
-        self.click_element("login or register")
         self.click_element("register")
         sleep(2)
         self.type_in_box(self.email_generator(), "registration email")
@@ -426,6 +431,7 @@ class VetoPharmHomePage(Page):
             password = self.gen_password()
         elif email == sensitive_settings.register_email:
             password = sensitive_settings.register_password
+        self.click_element("menu")
         self.click_element("login or register")
         self.click_element("register")
         sleep(2)
@@ -433,12 +439,10 @@ class VetoPharmHomePage(Page):
         self.type_in_box(password, "registration password")
         self.type_in_box(password, "confirm password")
         self.click_button("registration submit")
-        sleep(8)
-        self.capture_page_screenshot()
         if self._page_contains('To activate your account, please click the link sent to your mailbox'):
             self.activate_new_account(email, password)
             sleep(3)
-            self.wait_until_element_is_visible("id=header-middle", 30)
+            self.wait_until_element_is_visible("xpath=(//div[@class='head_info'])", 30)
             self.capture_page_screenshot()
             self.body_should_contain_text('Your account was confirmed successfully',
                 'The account was not activated')
@@ -455,8 +459,8 @@ class VetoPharmHomePage(Page):
             self.type_in_box(email, "id=rcmloginuser")
             self.type_in_box(password, "id=rcmloginpwd")
             self.click_element("id=rcmloginsubmit")
-        self.wait_until_element_is_visible("xpath=//td[@class='date']", 30)
-        if not self._is_element_present("xpath=//tr[@class='message unread']"):
+        self.wait_until_element_is_visible("xpath=//a[@class='button-logout']", 30)
+        if not self._is_element_present("xpath=//span[@class='unreadcount']"):
             self.click_element("xpath=//a[contains(text(), 'Date')]")
         sleep(3)
         self.capture_page_screenshot()
@@ -466,7 +470,7 @@ class VetoPharmHomePage(Page):
             self.reload_page()
             all_letters = self.find_activation_letter()
         self.click_element(all_letters[0])
-        sleep(8)
+        sleep(3)
         while self._page_contains("Thank you for registering on VetPharm!") is not True:
             self.reload_page()
             all_letters = self.find_activation_letter()
@@ -494,7 +498,7 @@ class VetoPharmHomePage(Page):
         """Delete current account, confirming the action with respective
         credentials, stored in sensitive_settings.py.
         """
-        self.click_element("user account")
+        self.click_element("menu")
         self.click_element("my profile")
         self.mouse_over_element_in_viewport("edit profile")
         self.click_element("edit profile")
@@ -2288,9 +2292,7 @@ class VetoPharmHomePage(Page):
     @robot_alias("Delete added vet")
     def delete_vet(self, added_vet_name):
         vet_to_delete = self.find_element("xpath=//li[@class='vet_item']//strong[contains(text(), 'Dr. "+added_vet_name+"')]")
-        self.mouse_over_element_in_viewport(vet_to_delete)
         self.click_element(vet_to_delete)
-        self.mouse_over_element_in_viewport("xpath=//li[@class='vet_item open']//a[contains(text(), 'Delete')]")
         self.click_element("xpath=//li[@class='vet_item open']//a[contains(text(), 'Delete')]")
         sleep(6)
         self.page_should_contain("Dr. "+added_vet_name+" was successfully removed from your account.",
@@ -2301,6 +2303,7 @@ class VetoPharmHomePage(Page):
 
     @robot_alias("find_a_vet")
     def find_vet(self):
+       self.click_element("account")
        self.click_element("health center")
        self.click_element("my veterinarians")
        self.click_element("add a vet")
@@ -2326,16 +2329,18 @@ class VetoPharmHomePage(Page):
     @robot_alias("add_found_vet")
     def add_a_vet(self):
         self.click_element("add vet button")
-        self.click_element("my added vets")
+        self.click_element("close")
+        self.click_element("menu")
+        self.click_element("veterinarians")
         self.body_should_contain_text("Ivan VILLAFRANCA", "Vet Ivan was not added")
-        self.click_element("added vet ivan")
-        sleep(2)
-        self.mouse_over_element_in_viewport("view vet profile")
         return self
 
     @robot_alias("delete_added_vet_from_health_center")
     def delete_a_vet(self):
+        self.click_element("added ivan")
+        self.click_element_at_coordinates("xpath=//div[@class='vets_list']", 0, 0)
+        self.focus("delete vet button")
         self.click_element("delete vet button")
         sleep(5)
-        self.body_should_contain_text("You don't have any veterinarians added yet.", "Vet Ivan was not deleted")
+        self.body_should_contain_text("Dr. Ivan VILLAFRANCA was successfully removed from your account.", "Vet Ivan was not deleted")
         return self
